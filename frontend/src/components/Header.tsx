@@ -25,7 +25,10 @@ export const Header: React.FC<HeaderProps> = ({
   viewMode = 'workspace',
   onViewModeChange,
 }) => {
-  const ollamaOk = health?.ollama?.status === 'available' && health?.ollama?.model_available;
+  const ollamaOk =
+    health?.ollama?.status === 'available' ||
+    (Boolean(health?.ollama?.model_available) && (health?.ollama as any)?.status === 'ok') ||
+    (Boolean(health?.ollama?.model_available) && health?.ollama?.status !== 'unavailable');
 
   return (
     <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-6 py-3.5">

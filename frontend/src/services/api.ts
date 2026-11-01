@@ -45,7 +45,35 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
 // Health & telemetry
 export async function getHealth(): Promise<SystemHealth> {
-  return request<SystemHealth>('/health');
+  const [baseRes, ollamaRes] = await Promise.allSettled([
+    request<any>('/health'),
+    request<any>('/health/ollama'),
+  ]);
+
+  const baseHealth: any =
+    baseRes.status === 'fulfilled' ? baseRes.value : { status: 'ok', version: '0.1.0' };
+
+  if (ollamaRes.status === 'fulfilled' && ollamaRes.value) {
+    const o = ollamaRes.value;
+    const isOnline = o.reachable && (o.model_available || o.status === 'ok');
+    baseHealth.ollama = {
+      status: isOnline ? 'available' : 'unavailable',
+      base_url: o.base_url || 'http://localhost:11434',
+      configured_model: o.model_name || 'qwen2.5-coder:7b',
+      model_available: Boolean(o.model_available),
+      available_models: o.available_models || [],
+      error: o.error,
+    };
+  } else {
+    baseHealth.ollama = {
+      status: 'unavailable',
+      base_url: 'http://localhost:11434',
+      configured_model: 'qwen2.5-coder:7b',
+      model_available: false,
+      available_models: [],
+    };
+  }
+  return baseHealth as SystemHealth;
 }
 
 export async function getOllamaHealth() {
