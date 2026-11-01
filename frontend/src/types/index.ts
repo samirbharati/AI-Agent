@@ -473,3 +473,125 @@ export interface SecurityAuditResult {
   reports: any[];
   findings: any[];
 }
+
+export interface QualityGateResult {
+  id?: string;
+  gate_number: number;
+  gate_name: string;
+  status: 'passed' | 'failed' | 'blocked' | 'waived';
+  criterion: string;
+  evaluated_value: string;
+  reason: string;
+  evidence?: Record<string, any>;
+  evaluated_at?: string;
+}
+
+export interface UnitTestSummary {
+  total_tests: number;
+  passed: number;
+  failed: number;
+  skipped: number;
+  coverage_percent: number;
+  duration_seconds: number;
+  test_cases: any[];
+}
+
+export interface IntegrationTestSummary {
+  total_scenarios: number;
+  passed: number;
+  failed: number;
+  duration_seconds: number;
+  scenarios: any[];
+}
+
+export interface ApiTestSummary {
+  total_endpoints: number;
+  passed: number;
+  failed: number;
+  contract_violations: number;
+  endpoints: any[];
+}
+
+export interface SecurityBreakerSummary {
+  total_vulnerabilities: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  exposed_secrets_count: number;
+  findings: any[];
+}
+
+export interface PerformanceMetrics {
+  avg_latency_ms: number;
+  p50_latency_ms: number;
+  p90_latency_ms: number;
+  p95_latency_ms: number;
+  p99_latency_ms: number;
+  max_latency_ms: number;
+  requests_per_second: number;
+  total_requests: number;
+  cpu_percent?: number | null;
+  memory_mb?: number | null;
+}
+
+export interface LoadTestStageResult {
+  id?: string;
+  stage: number;
+  target_concurrency: number;
+  actual_concurrency: number;
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  requests_per_second: number;
+  avg_latency_ms: number;
+  p50_latency_ms?: number;
+  p90_latency_ms?: number;
+  p95_latency_ms: number;
+  p99_latency_ms: number;
+  max_latency_ms?: number;
+  cpu_percent?: number | null;
+  memory_mb?: number | null;
+  status: string;
+  bottlenecks?: any[];
+  error_summary?: string | null;
+  created_at?: string;
+}
+
+export interface QualityCertificationReport {
+  project_id: string;
+  build_id: string;
+  overall_status: 'APPROVED' | 'CONDITIONALLY_APPROVED' | 'BLOCKED' | 'NOT_VERIFIED';
+  quality_score: number;
+  gates: QualityGateResult[];
+  unit_summary: UnitTestSummary;
+  integration_summary: IntegrationTestSummary;
+  api_summary: ApiTestSummary;
+  security_summary: SecurityBreakerSummary;
+  performance_metrics: PerformanceMetrics;
+  load_test_stages: LoadTestStageResult[];
+  open_critical_bugs: number;
+  open_high_bugs: number;
+  summary_markdown: string;
+  generated_at?: string;
+  html_report_path?: string | null;
+  pdf_report_path?: string | null;
+}
+
+export interface BugRecord {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  status: 'open' | 'in_progress' | 'verified' | 'blocked' | 'closed';
+  affected_files?: string[];
+  reproduction_steps?: string | null;
+  expected_behavior?: string | null;
+  actual_behavior?: string | null;
+  attempt_count: number;
+  fix_summary?: string | null;
+  verification_evidence?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}

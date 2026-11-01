@@ -378,6 +378,52 @@ All integrations are strictly optional. If no external API credentials are confi
 
 ---
 
+## Product Quality Engineering & Validation System
+
+AgentForge implements a strict automated quality engineering and verification system based on the core engineering philosophy:
+**Build it → Test it → Break it → Find the problem → Fix it → Test it again → Approve it.**
+
+Code is never assumed to work simply because it compiles or because an agent declares it works. Every build must satisfy 10 Evidence-Based Quality Gates backed by concrete logs before release approval.
+
+### 10 Evidence-Based Quality Gates
+
+| # | Gate Name | Strict Criterion | Verification Method |
+|---|-----------|------------------|---------------------|
+| 1 | **Build & Compilation** | 0 syntax errors, package manifests compile cleanly | AST parse & compiler check |
+| 2 | **Unit Test & Coverage** | 100% pass rate, test count > 0, line coverage ≥ 80% | `pytest -v --cov` parsing |
+| 3 | **Integration Scenarios** | All multi-component workflow integration scenarios pass | Integration runner execution |
+| 4 | **API Contract & Schema** | 0 schema violations, expected HTTP response codes | Endpoint discovery & contract validation |
+| 5 | **Security Breaker** | 0 Critical, 0 High vulnerabilities, 0 exposed secrets | Multi-vector adversarial security audit |
+| 6 | **Performance & Latency** | P95 latency ≤ 500ms under standard operational load | Asynchronous latency percentile profiling |
+| 7 | **Progressive Concurrency** | System sustains progressive load without high error rates | 7-stage concurrency simulator (10 → 1,000 users) |
+| 8 | **Zero Regression** | 0 regressions compared to known-good baseline | Automated snapshot comparison |
+| 9 | **Architectural Code Review** | Independent review approved, 0 blockers, score ≥ 75/100 | Static AST anti-pattern inspection |
+| 10 | **Human Release Sign-Off** | Explicit approval record from authorized human operator | DB `ApprovalRequest` record verification |
+
+### Progressive Concurrency Simulator (Up to 1,000 Users)
+
+The built-in progressive load runner steps through 7 tiers of concurrency:
+1. **Tier 1:** 10 concurrent users (warmup)
+2. **Tier 2:** 50 concurrent users
+3. **Tier 3:** 100 concurrent users
+4. **Tier 4:** 250 concurrent users
+5. **Tier 5:** 500 concurrent users
+6. **Tier 6:** 750 concurrent users
+7. **Tier 7:** 1,000 concurrent users
+
+At each stage, the simulator samples throughput (RPS), latency percentiles (P50, P90, P95, P99), CPU%, and Memory consumption. If error rates exceed 5% or latency degrades critically, execution halts with a documented bottleneck rather than overwhelming the host.
+
+### Automated Defect Lifecycle & Repair Loop
+
+When defects are discovered by QA, the Security Breaker, or Load tests:
+1. Defect is recorded with severity, reproduction steps, affected files, and logs.
+2. Developer Agent attempts a targeted repair.
+3. QA automatically reruns the failing test to verify the fix.
+4. If verified, the bug status transitions to `verified`.
+5. If the fix fails verification, the repair counter increments. **After 3 failed repair attempts**, the defect is marked as `blocked` and escalated for human operator review.
+
+---
+
 ## License
 
 For local development use only. See project documentation for terms.

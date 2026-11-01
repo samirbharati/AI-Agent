@@ -8,6 +8,7 @@ from app.api.v1 import (
     monitoring,
     projects,
     qa_security,
+    quality,
     terminal,
     workflow,
     workspace,
@@ -23,3 +24,4 @@ router.include_router(qa_security.router)
 router.include_router(monitoring.router)
 router.include_router(terminal.router)
 router.include_router(integrations.router)
+router.include_router(quality.router)

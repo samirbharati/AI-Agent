@@ -125,6 +125,15 @@ class Project(Base):
     terminal_commands: Mapped[list[TerminalCommand]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
+    load_test_runs: Mapped[list[LoadTestRun]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+    quality_gates: Mapped[list[QualityGateRecord]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+    quality_reports: Mapped[list[QualityReportRecord]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (Index("ix_projects_status", "status"),)
 
@@ -718,3 +727,127 @@ class TerminalEvent(Base):
         Index("ix_terminal_events_command_id", "command_id"),
         Index("ix_terminal_events_sequence", "command_id", "sequence_number"),
     )
+
+
+# ---------------------------------------------------------------------------
+# Load Testing & Concurrency Telemetry
+# ---------------------------------------------------------------------------
+
+
+class LoadTestRun(Base):
+    """
+    Execution record for simulated concurrent-user load testing (up to 1,000 users).
+    """
+
+    __tablename__ = "load_test_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    stage: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    target_concurrency: Mapped[int] = mapped_column(Integer, nullable=False)
+    actual_concurrency: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_requests: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    successful_requests: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed_requests: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    requests_per_second: Mapped[float] = mapped_column(default=0.0)
+    avg_latency_ms: Mapped[float] = mapped_column(default=0.0)
+    p50_latency_ms: Mapped[float] = mapped_column(default=0.0)
+    p90_latency_ms: Mapped[float] = mapped_column(default=0.0)
+    p95_latency_ms: Mapped[float] = mapped_column(default=0.0)
+    p99_latency_ms: Mapped[float] = mapped_column(default=0.0)
+    max_latency_ms: Mapped[float] = mapped_column(default=0.0)
+    cpu_percent: Mapped[float | None] = mapped_column()
+    memory_mb: Mapped[float | None] = mapped_column()
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="passed"
+    )  # passed | failed | aborted | running
+    error_summary: Mapped[str | None] = mapped_column(Text)
+    bottlenecks: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
+
+    project: Mapped[Project] = relationship(back_populates="load_test_runs")
+
+    __table_args__ = (
+        Index("ix_load_test_runs_project_id", "project_id"),
+        Index("ix_load_test_runs_concurrency", "target_concurrency"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Quality Gate Evaluation Records
+# ---------------------------------------------------------------------------
+
+
+class QualityGateRecord(Base):
+    """
+    Evaluation record for one of the 10 Evidence-Based Quality Gates.
+    """
+
+    __tablename__ = "quality_gate_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    gate_number: Mapped[int] = mapped_column(Integer, nullable=False)  # 1 to 10
+    gate_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="passed"
+    )  # passed | failed | blocked | waived
+    criterion: Mapped[str] = mapped_column(Text, nullable=False)
+    evaluated_value: Mapped[str] = mapped_column(String(256), nullable=False, default="")
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    evidence_json: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    evaluated_at: Mapped[datetime] = mapped_column(default=_utcnow)
+
+    project: Mapped[Project] = relationship(back_populates="quality_gates")
+
+    __table_args__ = (
+        Index("ix_quality_gate_records_project_id", "project_id"),
+        Index("ix_quality_gate_records_gate", "gate_number"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Quality Certification & Release Reports
+# ---------------------------------------------------------------------------
+
+
+class QualityReportRecord(Base):
+    """
+    Formal Product Quality Engineering report and certification record.
+    """
+
+    __tablename__ = "quality_report_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    build_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    overall_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="NOT_VERIFIED"
+    )  # APPROVED | CONDITIONALLY_APPROVED | BLOCKED | NOT_VERIFIED
+    total_tests: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    passed_tests: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed_tests: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    coverage_percent: Mapped[float] = mapped_column(default=0.0)
+    critical_bugs_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    high_bugs_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    security_findings_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    p95_latency_ms: Mapped[float | None] = mapped_column()
+    max_concurrency_tested: Mapped[int | None] = mapped_column(Integer)
+    summary_markdown: Mapped[str | None] = mapped_column(Text)
+    html_report_path: Mapped[str | None] = mapped_column(String(512))
+    pdf_report_path: Mapped[str | None] = mapped_column(String(512))
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
+
+    project: Mapped[Project] = relationship(back_populates="quality_reports")
+
+    __table_args__ = (
+        Index("ix_quality_report_records_project_id", "project_id"),
+        Index("ix_quality_report_records_status", "overall_status"),
+    )
+

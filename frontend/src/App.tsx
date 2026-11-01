@@ -35,11 +35,12 @@ import { QASecurityPanel } from './components/QASecurityPanel';
 import { LogsCenter } from './components/monitoring/LogsCenter';
 import { TerminalCenter } from './components/terminal/TerminalCenter';
 import { IntegrationsCenter } from './components/integrations/IntegrationsCenter';
+import { ProductQualityCenter } from './components/quality/ProductQualityCenter';
 import { FolderGit2, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<
-    'workspace' | 'terminal' | 'monitoring' | 'integrations'
+    'workspace' | 'terminal' | 'monitoring' | 'integrations' | 'quality'
   >('workspace');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -238,6 +239,8 @@ export const App: React.FC = () => {
           />
         ) : viewMode === 'integrations' ? (
           <IntegrationsCenter project={selectedProject} />
+        ) : viewMode === 'quality' ? (
+          <ProductQualityCenter project={selectedProject} />
         ) : selectedProject ? (
           <>
             {/* Project Overview Card */}

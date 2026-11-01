@@ -546,3 +546,78 @@ export async function triggerBetterStackHeartbeat(): Promise<{ success: boolean 
   if (!res.ok) throw new Error('Failed to send heartbeat');
   return res.json();
 }
+
+
+// ─── Product Quality Engineering & Validation System API ─────────────────────
+
+export async function runQualityAudit(
+  projectId: string,
+  options?: { build_id?: string; run_load_test?: boolean; max_load_stages?: number }
+): Promise<import('../types').QualityCertificationReport> {
+  const res = await fetch(`${API_BASE}/quality/${projectId}/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options || {}),
+  });
+  if (!res.ok) throw new Error('Failed to run quality audit');
+  return res.json();
+}
+
+export async function getQualityReports(
+  projectId: string
+): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/quality/${projectId}/reports`);
+  if (!res.ok) throw new Error('Failed to fetch quality reports');
+  return res.json();
+}
+
+export async function getLatestQualityGates(
+  projectId: string
+): Promise<import('../types').QualityGateResult[]> {
+  const res = await fetch(`${API_BASE}/quality/${projectId}/gates`);
+  if (!res.ok) throw new Error('Failed to fetch quality gates');
+  return res.json();
+}
+
+export async function getLoadTestRuns(
+  projectId: string
+): Promise<import('../types').LoadTestStageResult[]> {
+  const res = await fetch(`${API_BASE}/quality/${projectId}/load-tests`);
+  if (!res.ok) throw new Error('Failed to fetch load test runs');
+  return res.json();
+}
+
+export async function runLoadTest(
+  projectId: string,
+  options?: { test_path?: string; max_stages?: number }
+): Promise<import('../types').LoadTestStageResult[]> {
+  const res = await fetch(`${API_BASE}/quality/${projectId}/load-test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options || {}),
+  });
+  if (!res.ok) throw new Error('Failed to execute load test');
+  return res.json();
+}
+
+export async function getQualityBugs(
+  projectId: string
+): Promise<import('../types').BugRecord[]> {
+  const res = await fetch(`${API_BASE}/quality/${projectId}/bugs`);
+  if (!res.ok) throw new Error('Failed to fetch quality bugs');
+  return res.json();
+}
+
+export async function recordBugRepair(
+  projectId: string,
+  bugId: string,
+  payload: { fix_summary: string; retest_passed: boolean; verification_evidence: string }
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/quality/${projectId}/bugs/${bugId}/repair`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to record bug repair');
+  return res.json();
+}
