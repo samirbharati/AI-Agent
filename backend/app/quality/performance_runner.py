@@ -136,3 +136,4 @@ class PerformanceRunner:
             cpu_percent=cpu_end or cpu_start,
             memory_mb=mem_end or mem_start,
         )
+

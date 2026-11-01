@@ -68,9 +68,10 @@ export const App: React.FC = () => {
   const loadProjects = useCallback(async () => {
     try {
       const res = await getProjects();
-      setProjects(res.projects);
-      if (res.projects.length > 0 && !selectedProject) {
-        setSelectedProject(res.projects[0]);
+      const list = res?.projects || [];
+      setProjects(list);
+      if (list.length > 0 && !selectedProject) {
+        setSelectedProject(list[0]);
       }
     } catch (e) {
       console.error('Failed to load projects:', e);
@@ -88,9 +89,9 @@ export const App: React.FC = () => {
         getWorkflowStatus(projectId),
       ]);
 
-      if (tasksRes.status === 'fulfilled') setTasks(tasksRes.value.tasks);
-      if (artifactsRes.status === 'fulfilled') setArtifacts(artifactsRes.value.artifacts);
-      if (runsRes.status === 'fulfilled') setAgentRuns(runsRes.value.runs);
+      if (tasksRes.status === 'fulfilled') setTasks(tasksRes.value?.tasks || []);
+      if (artifactsRes.status === 'fulfilled') setArtifacts(artifactsRes.value?.artifacts || []);
+      if (runsRes.status === 'fulfilled') setAgentRuns(runsRes.value?.runs || []);
       if (statusRes.status === 'fulfilled') {
         setSelectedProject((prev) =>
           prev && prev.id === projectId ? { ...prev, status: statusRes.value.status } : prev

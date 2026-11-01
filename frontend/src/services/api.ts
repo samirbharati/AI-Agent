@@ -54,7 +54,9 @@ export async function getOllamaHealth() {
 
 // Projects
 export async function getProjects(page = 1, pageSize = 50): Promise<{ projects: Project[]; total: number }> {
-  return request<{ projects: Project[]; total: number }>(`/projects?page=${page}&page_size=${pageSize}`);
+  const data = await request<any>(`/projects?page=${page}&page_size=${pageSize}`);
+  const list = data?.items || data?.projects || [];
+  return { projects: list, total: data?.total ?? list.length };
 }
 
 export async function getProject(projectId: string): Promise<Project> {
@@ -102,7 +104,9 @@ export async function getWorkflowStatus(projectId: string): Promise<WorkflowStat
 
 // Tasks
 export async function getTasks(projectId: string): Promise<{ tasks: Task[]; total: number }> {
-  return request<{ tasks: Task[]; total: number }>(`/projects/${projectId}/tasks`);
+  const data = await request<any>(`/projects/${projectId}/tasks`);
+  const list = data?.items || data?.tasks || [];
+  return { tasks: list, total: data?.total ?? list.length };
 }
 
 // Artifacts

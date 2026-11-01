@@ -135,13 +135,13 @@ export const Header: React.FC<HeaderProps> = ({
             <select
               value={selectedProject?.id || ''}
               onChange={(e) => {
-                const found = projects.find((p) => p.id === e.target.value);
+                const found = (projects || []).find((p) => p.id === e.target.value);
                 if (found) onSelectProject(found);
               }}
               className="bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium max-w-[220px] truncate"
             >
-              {projects.length === 0 && <option value="">No projects yet</option>}
-              {projects.map((p) => (
+              {(projects || []).length === 0 && <option value="">No projects yet</option>}
+              {(projects || []).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
