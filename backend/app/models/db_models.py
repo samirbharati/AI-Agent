@@ -324,7 +324,7 @@ class Artifact(Base):
     artifact_type: Mapped[str] = mapped_column(
         String(64), nullable=False
     )  # requirements | architecture | code | test_plan | test_report | security_report
-    name: Mapped[str] = mapped_column(String(256), nullable=False)       # e.g. requirements.md
+    name: Mapped[str] = mapped_column(String(256), nullable=False)  # e.g. requirements.md
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")  # full text content
     mime_type: Mapped[str | None] = mapped_column(String(128))
     size_bytes: Mapped[int | None] = mapped_column(Integer)
@@ -527,6 +527,19 @@ class WorkflowEvent(Base):
     agent_run_id: Mapped[str | None] = mapped_column(
         ForeignKey("agent_runs.id", ondelete="SET NULL"), nullable=True
     )
+    task_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    trace_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    parent_event_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    source: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )  # e.g. orchestrator, requirements-analyst
+    category: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )  # agent_lifecycle, llm_request, tool_execution, test_execution, security_scan, workflow_transition
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str | None] = mapped_column(
+        String(32), nullable=True
+    )  # running, success, failure, warning, info
     event_type: Mapped[str] = mapped_column(
         String(64), nullable=False
     )  # agent_started | agent_completed | agent_failed | status_changed | approval_requested | etc.
@@ -544,6 +557,9 @@ class WorkflowEvent(Base):
         Index("ix_workflow_events_project_id", "project_id"),
         Index("ix_workflow_events_event_type", "event_type"),
         Index("ix_workflow_events_created_at", "created_at"),
+        Index("ix_workflow_events_severity", "severity"),
+        Index("ix_workflow_events_trace_id", "trace_id"),
+        Index("ix_workflow_events_category", "category"),
     )
 
 

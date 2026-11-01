@@ -97,9 +97,7 @@ Please design a complete system architecture for this project.
         }
         missing = required - set(sections.keys())
         if missing:
-            raise ValueError(
-                f"Architecture output is missing required sections: {sorted(missing)}"
-            )
+            raise ValueError(f"Architecture output is missing required sections: {sorted(missing)}")
 
         has_mermaid = "```mermaid" in raw_output
         api_endpoints = _count_api_endpoints(sections.get("API Design", ""))

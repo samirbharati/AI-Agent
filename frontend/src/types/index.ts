@@ -213,5 +213,96 @@ export interface QATestResult {
   raw_stderr: string;
 }
 
+export interface MonitoringEvent {
+  id: string;
+  project_id: string;
+  event_type: string;
+  message: string;
+  severity: 'debug' | 'info' | 'warning' | 'error' | 'critical' | 'success';
+  source: string;
+  category: string;
+  status: string;
+  task_id?: string | null;
+  agent_run_id?: string | null;
+  trace_id?: string | null;
+  parent_event_id?: string | null;
+  duration_ms?: number | null;
+  payload?: Record<string, any>;
+  timestamp: string;
+}
+
+export interface MonitoringStats {
+  total_events: number;
+  successful_operations: number;
+  warnings: number;
+  errors: number;
+  critical_events: number;
+  active_agents: number;
+  active_workflows: number;
+}
+
+export interface AgentMonitoringState {
+  agent_id: string;
+  agent_name: string;
+  role: string;
+  status: 'IDLE' | 'INITIALIZING' | 'RUNNING' | 'WAITING' | 'COMPLETED' | 'FAILED' | 'BLOCKED' | 'AWAITING APPROVAL';
+  current_task?: string | null;
+  completed_tasks: number;
+  failed_tasks: number;
+  total_runs: number;
+  model_used: string;
+  last_active?: string | null;
+  duration_seconds?: number | null;
+  latest_summary?: string | null;
+}
+
+export interface LLMRequestRecord {
+  id: string;
+  model_name: string;
+  agent_role: string;
+  duration_seconds?: number | null;
+  token_count_in?: number | null;
+  token_count_out?: number | null;
+  success: boolean;
+  error_type?: string | null;
+  timestamp: string;
+}
+
+export interface LLMIntelligenceReport {
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  average_response_time: number;
+  slowest_request_time: number;
+  records: LLMRequestRecord[];
+}
+
+export interface ToolExecutionRecord {
+  id: string;
+  project_id: string;
+  tool_name: string;
+  calling_agent: string;
+  task_id?: string | null;
+  duration_ms?: number | null;
+  status: string;
+  command?: string[] | string | null;
+  exit_code?: number | null;
+  message: string;
+  timestamp: string;
+}
+
+export interface IncidentRecord {
+  id: string;
+  project_id: string;
+  task_id?: string | null;
+  title: string;
+  description: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  status: string;
+  affected_files: string[];
+  created_at: string;
+}
+
+
 
 

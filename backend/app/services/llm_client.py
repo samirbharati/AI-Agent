@@ -96,10 +96,10 @@ class LLMClientConfig:
 
     temperature: float = 0.2
     top_p: float = 0.9
-    num_ctx: int | None = None          # uses settings default if None
-    max_tokens: int | None = None       # hard stop on generated tokens
+    num_ctx: int | None = None  # uses settings default if None
+    max_tokens: int | None = None  # hard stop on generated tokens
     stop_sequences: list[str] = field(default_factory=list)
-    timeout_seconds: float = 300.0      # generous for CPU inference
+    timeout_seconds: float = 300.0  # generous for CPU inference
 
 
 # ---------------------------------------------------------------------------
@@ -183,9 +183,7 @@ class OllamaLLMClient:
         settings = get_settings()
         num_ctx = cfg.num_ctx or settings.ollama_num_ctx
 
-        trimmed_messages = _trim_messages_to_budget(
-            messages, system_prompt, num_ctx
-        )
+        trimmed_messages = _trim_messages_to_budget(messages, system_prompt, num_ctx)
 
         payload = self._build_payload(
             system_prompt=system_prompt,
@@ -214,9 +212,7 @@ class OllamaLLMClient:
         settings = get_settings()
         num_ctx = cfg.num_ctx or settings.ollama_num_ctx
 
-        trimmed_messages = _trim_messages_to_budget(
-            messages, system_prompt, num_ctx
-        )
+        trimmed_messages = _trim_messages_to_budget(messages, system_prompt, num_ctx)
 
         payload = self._build_payload(
             system_prompt=system_prompt,

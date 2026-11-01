@@ -38,6 +38,7 @@ from app.agents.security_engineer import SecurityEngineerAgent
 from app.agents.software_developer import SoftwareDeveloperAgent
 from app.agents.system_architect import SystemArchitectAgent
 from app.agents.task_planner import TaskPlannerAgent
+from app.logging.correlation import get_current_trace_id
 from app.models.db_models import (
     Artifact,
     Project,
@@ -96,6 +97,7 @@ async def _set_project_status(
     event_type: str,
     message: str,
     severity: str = "info",
+    source: str = "orchestrator",
 ) -> None:
     project.status = new_status
     project.updated_at = datetime.now(UTC)
@@ -104,6 +106,11 @@ async def _set_project_status(
         event_type=event_type,
         message=message,
         severity=severity,
+        source=source,
+        category="workflow_transition",
+        status=new_status,
+        trace_id=get_current_trace_id(),
+        created_at=datetime.now(UTC),
     )
     db.add(event)
     await db.flush()
@@ -117,6 +124,11 @@ async def _add_event(
     message: str,
     severity: str = "info",
     agent_run_id: str | None = None,
+    task_id: str | None = None,
+    source: str = "orchestrator",
+    category: str = "workflow_transition",
+    duration_ms: int | None = None,
+    payload: dict[str, Any] | None = None,
 ) -> None:
     event = WorkflowEvent(
         project_id=project_id,
@@ -124,6 +136,14 @@ async def _add_event(
         message=message,
         severity=severity,
         agent_run_id=agent_run_id,
+        task_id=task_id,
+        source=source,
+        category=category,
+        status=severity,
+        trace_id=get_current_trace_id(),
+        duration_ms=duration_ms,
+        payload=payload,
+        created_at=datetime.now(UTC),
     )
     db.add(event)
     await db.flush()
@@ -174,11 +194,10 @@ async def run_requirements_phase(
 
     if result.success:
         ctx.requirements_document = result.output
-        await _save_artifact(
-            db, ctx.project_id, "requirements", "requirements.md", result.output
-        )
+        await _save_artifact(db, ctx.project_id, "requirements", "requirements.md", result.output)
         await _set_project_status(
-            db, project,
+            db,
+            project,
             "requirements_review",
             "requirements_generated",
             "Requirements analysis complete. Awaiting human review.",
@@ -186,8 +205,11 @@ async def run_requirements_phase(
     else:
         ctx.errors.append(f"Requirements analysis failed: {result.error}")
         await _add_event(
-            db, ctx.project_id, "requirements_failed",
-            f"Requirements analysis failed: {result.error}", severity="error"
+            db,
+            ctx.project_id,
+            "requirements_failed",
+            f"Requirements analysis failed: {result.error}",
+            severity="error",
         )
 
     return result
@@ -220,11 +242,10 @@ async def run_architecture_phase(
         ctx.architecture_document = result.output
         # Create a shorter summary for later agent context
         ctx.architecture_summary = result.output[:3000]
-        await _save_artifact(
-            db, ctx.project_id, "architecture", "architecture.md", result.output
-        )
+        await _save_artifact(db, ctx.project_id, "architecture", "architecture.md", result.output)
         await _set_project_status(
-            db, project,
+            db,
+            project,
             "architecture_review",
             "architecture_generated",
             "Architecture design complete. Awaiting human review.",
@@ -232,8 +253,11 @@ async def run_architecture_phase(
     else:
         ctx.errors.append(f"Architecture design failed: {result.error}")
         await _add_event(
-            db, ctx.project_id, "architecture_failed",
-            f"Architecture design failed: {result.error}", severity="error"
+            db,
+            ctx.project_id,
+            "architecture_failed",
+            f"Architecture design failed: {result.error}",
+            severity="error",
         )
 
     return result
@@ -269,22 +293,25 @@ async def run_planning_phase(
         # Persist tasks to the DB
         await _persist_tasks(db, ctx.project_id, result.parsed.get("tasks", []))
         await _add_event(
-            db, ctx.project_id, "tasks_created",
-            f"{result.parsed.get('total_tasks', 0)} tasks created from task plan."
+            db,
+            ctx.project_id,
+            "tasks_created",
+            f"{result.parsed.get('total_tasks', 0)} tasks created from task plan.",
         )
     else:
         ctx.errors.append(f"Task planning failed: {result.error}")
         await _add_event(
-            db, ctx.project_id, "planning_failed",
-            f"Task planning failed: {result.error}", severity="error"
+            db,
+            ctx.project_id,
+            "planning_failed",
+            f"Task planning failed: {result.error}",
+            severity="error",
         )
 
     return result
 
 
-async def _persist_tasks(
-    db: AsyncSession, project_id: str, tasks: list[dict]
-) -> None:
+async def _persist_tasks(db: AsyncSession, project_id: str, tasks: list[dict]) -> None:
     """Insert tasks from the planner into the DB, resolving dependency titles."""
     title_to_id: dict[str, str] = {}
 
@@ -305,9 +332,7 @@ async def _persist_tasks(
         title_to_id[task.title] = task.id
 
     # Second pass: wire up dependencies
-    result = await db.execute(
-        select(Task).where(Task.project_id == project_id)
-    )
+    result = await db.execute(select(Task).where(Task.project_id == project_id))
     db_tasks = {t.title: t for t in result.scalars().all()}
 
     for task_data in tasks:
@@ -339,8 +364,7 @@ async def run_implementation_phase(
     Returns True if all tasks completed successfully.
     """
     await _set_project_status(
-        db, project, "implementing", "implementation_started",
-        "Implementation phase started."
+        db, project, "implementing", "implementation_started", "Implementation phase started."
     )
 
     # Load tasks ordered by dependency order
@@ -399,10 +423,12 @@ async def _run_task_pipeline(
         await db.flush()
 
         if not dev_result.success:
-            prior_attempts.append({
-                "output": dev_result.output,
-                "error": dev_result.error,
-            })
+            prior_attempts.append(
+                {
+                    "output": dev_result.output,
+                    "error": dev_result.error,
+                }
+            )
             _update_attempt(attempt_record, "failed", dev_result.error)
             await db.flush()
             continue
@@ -436,14 +462,19 @@ async def _run_task_pipeline(
                         break
 
         if syntax_error:
-            prior_attempts.append({
-                "output": dev_result.output,
-                "error": syntax_error,
-            })
+            prior_attempts.append(
+                {
+                    "output": dev_result.output,
+                    "error": syntax_error,
+                }
+            )
             _update_attempt(attempt_record, "syntax_failed", syntax_error)
             await _add_event(
-                db, ctx.project_id, "syntax_check_failed",
-                f"Task '{task.title}': {syntax_error}", severity="warning"
+                db,
+                ctx.project_id,
+                "syntax_check_failed",
+                f"Task '{task.title}': {syntax_error}",
+                severity="warning",
             )
             await db.flush()
             continue
@@ -485,14 +516,19 @@ async def _run_task_pipeline(
         if not qa_passed and qa_result.success:
             bugs = qa_parsed.get("bugs", []) or test_run.bugs
             bug_summary = "; ".join(b.get("title", "defect") for b in bugs[:3])
-            prior_attempts.append({
-                "output": dev_result.output,
-                "error": f"QA failed: {bug_summary}\nStdout: {test_run.raw_stdout}\nStderr: {test_run.raw_stderr}",
-            })
+            prior_attempts.append(
+                {
+                    "output": dev_result.output,
+                    "error": f"QA failed: {bug_summary}\nStdout: {test_run.raw_stdout}\nStderr: {test_run.raw_stderr}",
+                }
+            )
             _update_attempt(attempt_record, "qa_failed", f"QA failed: {bug_summary}")
             await _add_event(
-                db, ctx.project_id, "qa_verification_failed",
-                f"Task '{task.title}' QA defects: {bug_summary}", severity="warning"
+                db,
+                ctx.project_id,
+                "qa_verification_failed",
+                f"Task '{task.title}' QA defects: {bug_summary}",
+                severity="warning",
             )
             await db.flush()
             continue
@@ -520,19 +556,27 @@ async def _run_task_pipeline(
             sec_approved = False
 
         if not sec_approved and sec_result.success:
-            crit = max(sec_parsed.get("critical_finding_count", 0), scan_data.get("critical_count", 0))
+            crit = max(
+                sec_parsed.get("critical_finding_count", 0), scan_data.get("critical_count", 0)
+            )
             high = max(sec_parsed.get("high_finding_count", 0), scan_data.get("high_count", 0))
-            prior_attempts.append({
-                "output": dev_result.output,
-                "error": f"Security review failed: {crit} critical, {high} high findings detected by security scanner.",
-            })
+            prior_attempts.append(
+                {
+                    "output": dev_result.output,
+                    "error": f"Security review failed: {crit} critical, {high} high findings detected by security scanner.",
+                }
+            )
             _update_attempt(
-                attempt_record, "security_failed",
-                f"Security: {crit} critical, {high} high findings"
+                attempt_record,
+                "security_failed",
+                f"Security: {crit} critical, {high} high findings",
             )
             await _add_event(
-                db, ctx.project_id, "security_verification_failed",
-                f"Task '{task.title}' security violations: {crit} critical, {high} high", severity="error"
+                db,
+                ctx.project_id,
+                "security_verification_failed",
+                f"Task '{task.title}' security violations: {crit} critical, {high} high",
+                severity="error",
             )
             await db.flush()
             continue
@@ -557,13 +601,14 @@ async def _run_task_pipeline(
 
         if not cr_approved:
             blockers = cr_parsed.get("blockers_count", 0)
-            prior_attempts.append({
-                "output": dev_result.output,
-                "error": f"Code review: {blockers} blockers. Decision: {cr_parsed.get('decision')}",
-            })
+            prior_attempts.append(
+                {
+                    "output": dev_result.output,
+                    "error": f"Code review: {blockers} blockers. Decision: {cr_parsed.get('decision')}",
+                }
+            )
             _update_attempt(
-                attempt_record, "review_failed",
-                f"Code review rejected: {blockers} blockers"
+                attempt_record, "review_failed", f"Code review rejected: {blockers} blockers"
             )
             await db.flush()
             continue
@@ -582,8 +627,10 @@ async def _run_task_pipeline(
         }
 
         await _add_event(
-            db, ctx.project_id, "task_completed",
-            f"Task '{task.title}' completed after {attempt + 1} attempt(s)."
+            db,
+            ctx.project_id,
+            "task_completed",
+            f"Task '{task.title}' completed after {attempt + 1} attempt(s).",
         )
         logger.info("Task '%s' completed on attempt %d.", task.title, attempt + 1)
         return True
@@ -593,16 +640,16 @@ async def _run_task_pipeline(
     task.updated_at = datetime.now(UTC)
     await db.flush()
     await _add_event(
-        db, ctx.project_id, "task_failed",
+        db,
+        ctx.project_id,
+        "task_failed",
         f"Task '{task.title}' failed after {ctx.max_repair_attempts} attempts.",
         severity="error",
     )
     return False
 
 
-def _update_attempt(
-    attempt: TaskExecutionAttempt, status: str, error: str | None
-) -> None:
+def _update_attempt(attempt: TaskExecutionAttempt, status: str, error: str | None) -> None:
     attempt.status = status
     attempt.error_message = error
     attempt.completed_at = datetime.now(UTC)
@@ -647,6 +694,9 @@ async def run_project_workflow(
     )
 
     logger.info("Starting workflow for project '%s' (%s)", project.name, project_id)
+    from app.logging.correlation import generate_trace_id, set_current_trace_id
+
+    set_current_trace_id(generate_trace_id())
 
     try:
         # ── Phase 1: Requirements ────────────────────────────────────────────
@@ -654,7 +704,10 @@ async def run_project_workflow(
             result = await run_requirements_phase(ctx, db, project)
             if not result.success:
                 await _set_project_status(
-                    db, project, "failed", "workflow_failed",
+                    db,
+                    project,
+                    "failed",
+                    "workflow_failed",
                     f"Workflow failed at requirements phase: {result.error}",
                     severity="error",
                 )
@@ -667,13 +720,14 @@ async def run_project_workflow(
         # ── Phase 2: Architecture ────────────────────────────────────────────
         if skip_to_phase not in ("planning", "implementation"):
             # Reload requirements from artifacts
-            ctx.requirements_document = await _load_artifact(
-                db, project_id, "requirements"
-            )
+            ctx.requirements_document = await _load_artifact(db, project_id, "requirements")
             result = await run_architecture_phase(ctx, db, project)
             if not result.success:
                 await _set_project_status(
-                    db, project, "failed", "workflow_failed",
+                    db,
+                    project,
+                    "failed",
+                    "workflow_failed",
                     f"Workflow failed at architecture phase: {result.error}",
                     severity="error",
                 )
@@ -691,7 +745,10 @@ async def run_project_workflow(
             result = await run_planning_phase(ctx, db, project)
             if not result.success:
                 await _set_project_status(
-                    db, project, "failed", "workflow_failed",
+                    db,
+                    project,
+                    "failed",
+                    "workflow_failed",
                     f"Workflow failed at planning phase: {result.error}",
                     severity="error",
                 )
@@ -707,11 +764,16 @@ async def run_project_workflow(
 
         final_status = "completed" if all_success else "failed"
         final_message = (
-            "All tasks completed successfully." if all_success
+            "All tasks completed successfully."
+            if all_success
             else f"Workflow completed with failures. Errors: {ctx.errors[:3]}"
         )
         await _set_project_status(
-            db, project, final_status, "workflow_finished", final_message,
+            db,
+            project,
+            final_status,
+            "workflow_finished",
+            final_message,
             severity="info" if all_success else "error",
         )
         await db.commit()
@@ -720,8 +782,12 @@ async def run_project_workflow(
         logger.exception("Unhandled exception in workflow for project %s: %s", project_id, exc)
         try:
             await _set_project_status(
-                db, project, "failed", "workflow_error",
-                f"Unhandled workflow error: {exc}", severity="critical"
+                db,
+                project,
+                "failed",
+                "workflow_error",
+                f"Unhandled workflow error: {exc}",
+                severity="critical",
             )
             await db.commit()
         except Exception as inner_exc:  # noqa: BLE001

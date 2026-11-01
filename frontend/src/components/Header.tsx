@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Plus, RefreshCw, Terminal, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Cpu, Plus, RefreshCw, Terminal, CheckCircle2, AlertCircle, LayoutDashboard, Activity } from 'lucide-react';
 import type { Project, SystemHealth } from '../types';
 
 interface HeaderProps {
@@ -10,6 +10,8 @@ interface HeaderProps {
   onRefresh: () => void;
   isRefreshing: boolean;
   health: SystemHealth | null;
+  viewMode?: 'workspace' | 'monitoring';
+  onViewModeChange?: (mode: 'workspace' | 'monitoring') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,6 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
   onRefresh,
   isRefreshing,
   health,
+  viewMode = 'workspace',
+  onViewModeChange,
 }) => {
   const ollamaOk = health?.ollama?.status === 'available' && health?.ollama?.model_available;
 
@@ -41,6 +45,35 @@ export const Header: React.FC<HeaderProps> = ({
             <p className="text-xs text-slate-400 m-0">Autonomous Multi-Agent Software Development</p>
           </div>
         </div>
+
+        {/* View Mode Switcher */}
+        {onViewModeChange && (
+          <div className="flex items-center p-1 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono">
+            <button
+              onClick={() => onViewModeChange('workspace')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                viewMode === 'workspace'
+                  ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Workspace</span>
+            </button>
+            <button
+              onClick={() => onViewModeChange('monitoring')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                viewMode === 'monitoring'
+                  ? 'bg-cyan-600 text-white font-bold shadow-md shadow-cyan-600/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5 text-cyan-300" />
+              <span>Monitoring Center</span>
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            </button>
+          </div>
+        )}
 
         {/* Project Selector & System Telemetry */}
         <div className="flex items-center gap-3 flex-wrap">

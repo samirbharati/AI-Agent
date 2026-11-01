@@ -147,9 +147,7 @@ async def _run_workflow_background(project_id: str, skip_to_phase: str | None = 
         try:
             await run_project_workflow(project_id, session, skip_to_phase=skip_to_phase)
         except Exception as exc:  # noqa: BLE001
-            logger.exception(
-                "Background workflow error for project %s: %s", project_id, exc
-            )
+            logger.exception("Background workflow error for project %s: %s", project_id, exc)
 
 
 # ---------------------------------------------------------------------------
@@ -194,9 +192,7 @@ async def get_workflow_status(
     ]
 
     # Agent run stats
-    runs_result = await db.execute(
-        select(AgentRun).where(AgentRun.project_id == project_id)
-    )
+    runs_result = await db.execute(select(AgentRun).where(AgentRun.project_id == project_id))
     runs = runs_result.scalars().all()
     total_tokens = sum(r.total_tokens or 0 for r in runs)
 
@@ -256,8 +252,7 @@ async def stream_workflow_events(
             factory = get_session_factory()
             async with factory() as seed_session:
                 seed_result = await seed_session.execute(
-                    select(WorkflowEvent.created_at)
-                    .where(WorkflowEvent.id == last_event_id)
+                    select(WorkflowEvent.created_at).where(WorkflowEvent.id == last_event_id)
                 )
                 row = seed_result.scalar_one_or_none()
                 if row is not None:
@@ -292,31 +287,37 @@ async def stream_workflow_events(
                 for event in new_events:
                     seen_ids.add(event.id)
                     after_dt = event.created_at
-                    data = json.dumps({
-                        "id": event.id,
-                        "event_type": event.event_type,
-                        "message": event.message,
-                        "severity": event.severity,
-                        "project_status": proj.status,
-                        "created_at": event.created_at.isoformat(),
-                    })
+                    data = json.dumps(
+                        {
+                            "id": event.id,
+                            "event_type": event.event_type,
+                            "message": event.message,
+                            "severity": event.severity,
+                            "project_status": proj.status,
+                            "created_at": event.created_at.isoformat(),
+                        }
+                    )
                     yield f"id: {event.id}\ndata: {data}\n\n"
 
                 # Send heartbeat if no new events
                 if not new_events:
-                    heartbeat = json.dumps({
-                        "event_type": "heartbeat",
-                        "project_status": proj.status,
-                        "timestamp": datetime.now(UTC).isoformat(),
-                    })
+                    heartbeat = json.dumps(
+                        {
+                            "event_type": "heartbeat",
+                            "project_status": proj.status,
+                            "timestamp": datetime.now(UTC).isoformat(),
+                        }
+                    )
                     yield f"data: {heartbeat}\n\n"
 
                 if proj.status in terminal_statuses:
-                    final = json.dumps({
-                        "event_type": "stream_end",
-                        "project_status": proj.status,
-                        "message": f"Project reached terminal status: {proj.status}",
-                    })
+                    final = json.dumps(
+                        {
+                            "event_type": "stream_end",
+                            "project_status": proj.status,
+                            "message": f"Project reached terminal status: {proj.status}",
+                        }
+                    )
                     yield f"data: {final}\n\n"
                     break
 

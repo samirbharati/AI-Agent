@@ -135,9 +135,7 @@ class TestProjectLifecycleIntegration:
             resp = await async_client.get(f"/api/v1/projects/{project_id}")
             assert resp.json()["status"] == status
 
-    async def test_project_update_name_and_description(
-        self, async_client: AsyncClient
-    ):
+    async def test_project_update_name_and_description(self, async_client: AsyncClient):
         """Update project name/description and verify changes persist."""
         proj = await _create_project(async_client, {"name": "Update Before"})
         project_id = proj["id"]
@@ -180,9 +178,7 @@ class TestProjectLifecycleIntegration:
 class TestWorkflowAPIIntegration:
     """Test the workflow endpoints in sequence as a frontend would call them."""
 
-    async def test_start_workflow_queues_background_task(
-        self, async_client: AsyncClient
-    ):
+    async def test_start_workflow_queues_background_task(self, async_client: AsyncClient):
         """
         Start workflow should:
         1. Return 200 with status=ok
@@ -192,9 +188,7 @@ class TestWorkflowAPIIntegration:
         project_id = proj["id"]
 
         with patch_workflow_background() as mock_bg:
-            resp = await async_client.post(
-                f"/api/v1/projects/{project_id}/workflow/start"
-            )
+            resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/start")
         assert resp.status_code == 200
         body = resp.json()
         assert body["status"] == "ok"
@@ -208,17 +202,17 @@ class TestWorkflowAPIIntegration:
         project_id = proj["id"]
 
         # Manually insert a workflow event
-        db_session.add(WorkflowEvent(
-            project_id=project_id,
-            event_type="test_event",
-            message="Testing status aggregation",
-            severity="info",
-        ))
+        db_session.add(
+            WorkflowEvent(
+                project_id=project_id,
+                event_type="test_event",
+                message="Testing status aggregation",
+                severity="info",
+            )
+        )
         await db_session.commit()
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/workflow/status"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/workflow/status")
         assert resp.status_code == 200
         body = resp.json()
         assert body["project_id"] == project_id
@@ -236,9 +230,7 @@ class TestWorkflowAPIIntegration:
         await _set_status(async_client, project_id, "in_progress")
 
         with patch_workflow_background():
-            resp = await async_client.post(
-                f"/api/v1/projects/{project_id}/workflow/start"
-            )
+            resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/start")
         assert resp.status_code == 409
 
     async def test_resume_flow_after_approval(self, async_client: AsyncClient):
@@ -252,15 +244,11 @@ class TestWorkflowAPIIntegration:
         await _set_status(async_client, project_id, "requirements_approved")
 
         with patch_workflow_background() as mock_bg:
-            resp = await async_client.post(
-                f"/api/v1/projects/{project_id}/workflow/resume"
-            )
+            resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/resume")
         assert resp.status_code == 200
         mock_bg.assert_called_once_with(project_id, "architecture")
 
-    async def test_workflow_events_sse_endpoint_exists(
-        self, async_client: AsyncClient
-    ):
+    async def test_workflow_events_sse_endpoint_exists(self, async_client: AsyncClient):
         """SSE events endpoint should return a 200 with text/event-stream."""
         proj = await _create_project(async_client, {"name": "SSE Integration"})
         project_id = proj["id"]
@@ -290,9 +278,7 @@ class TestAgentPipelineIntegration:
         from app.agents.requirements_analyst import RequirementsAnalystAgent
         from app.agents.system_architect import SystemArchitectAgent
 
-        proj = await _create_project(
-            async_client, {"name": "Requirements-Architecture Pipeline"}
-        )
+        proj = await _create_project(async_client, {"name": "Requirements-Architecture Pipeline"})
         project_id = proj["id"]
 
         req_output = """# System Requirements Document
@@ -378,31 +364,33 @@ CREATE TABLE users (id VARCHAR(36) PRIMARY KEY, email VARCHAR(255) UNIQUE);
         proj = await _create_project(async_client, {"name": "Task Planner DB Test"})
         project_id = proj["id"]
 
-        task_plan = json.dumps({
-            "tasks": [
-                {
-                    "title": "Setup project structure",
-                    "description": "Initialize the project directory and config.",
-                    "assigned_agent": "software-developer",
-                    "priority": "high",
-                    "complexity_estimate": "simple",
-                    "dependencies": [],
-                    "acceptance_criteria": "Project directory exists.",
-                },
-                {
-                    "title": "Implement user authentication",
-                    "description": "Add login and registration endpoints with JWT.",
-                    "assigned_agent": "software-developer",
-                    "priority": "high",
-                    "complexity_estimate": "moderate",
-                    "dependencies": ["Setup project structure"],
-                    "acceptance_criteria": "Users can login.",
-                },
-            ],
-            "total_tasks": 2,
-            "estimated_complexity": "moderate",
-            "planning_notes": "Sequential setup then auth.",
-        })
+        task_plan = json.dumps(
+            {
+                "tasks": [
+                    {
+                        "title": "Setup project structure",
+                        "description": "Initialize the project directory and config.",
+                        "assigned_agent": "software-developer",
+                        "priority": "high",
+                        "complexity_estimate": "simple",
+                        "dependencies": [],
+                        "acceptance_criteria": "Project directory exists.",
+                    },
+                    {
+                        "title": "Implement user authentication",
+                        "description": "Add login and registration endpoints with JWT.",
+                        "assigned_agent": "software-developer",
+                        "priority": "high",
+                        "complexity_estimate": "moderate",
+                        "dependencies": ["Setup project structure"],
+                        "acceptance_criteria": "Users can login.",
+                    },
+                ],
+                "total_tasks": 2,
+                "estimated_complexity": "moderate",
+                "planning_notes": "Sequential setup then auth.",
+            }
+        )
 
         with patch_all_agents(task_plan):
             tp = TaskPlannerAgent()
@@ -428,21 +416,23 @@ CREATE TABLE users (id VARCHAR(36) PRIMARY KEY, email VARCHAR(255) UNIQUE);
         proj = await _create_project(async_client, {"name": "Dev Output Test"})
         project_id = proj["id"]
 
-        dev_json = json.dumps({
-            "files": [
-                {
-                    "path": "app/main.py",
-                    "action": "create",
-                    "content": "from fastapi import FastAPI\n\napp = FastAPI()\n",
-                }
-            ],
-            "commands": [
-                {"command": "python -m pytest", "purpose": "Run tests", "safe_to_run": True}
-            ],
-            "implementation_notes": "Created FastAPI entrypoint.",
-            "tests_included": False,
-            "estimated_loc": 3,
-        })
+        dev_json = json.dumps(
+            {
+                "files": [
+                    {
+                        "path": "app/main.py",
+                        "action": "create",
+                        "content": "from fastapi import FastAPI\n\napp = FastAPI()\n",
+                    }
+                ],
+                "commands": [
+                    {"command": "python -m pytest", "purpose": "Run tests", "safe_to_run": True}
+                ],
+                "implementation_notes": "Created FastAPI entrypoint.",
+                "tests_included": False,
+                "estimated_loc": 3,
+            }
+        )
 
         with patch_all_agents(dev_json):
             dev = SoftwareDeveloperAgent()
@@ -469,16 +459,16 @@ CREATE TABLE users (id VARCHAR(36) PRIMARY KEY, email VARCHAR(255) UNIQUE);
         proj = await _create_project(async_client, {"name": "QA Engineer Context"})
         project_id = proj["id"]
 
-        qa_json = json.dumps({
-            "verdict": "pass",
-            "summary": "All 10 tests passed without regressions.",
-            "test_cases": [
-                {"name": "test_auth", "status": "passed", "severity": "high"}
-            ],
-            "bugs": [],
-            "coverage_assessment": "92% statement coverage.",
-            "recommendations": ["Add fuzz testing for token decoding."],
-        })
+        qa_json = json.dumps(
+            {
+                "verdict": "pass",
+                "summary": "All 10 tests passed without regressions.",
+                "test_cases": [{"name": "test_auth", "status": "passed", "severity": "high"}],
+                "bugs": [],
+                "coverage_assessment": "92% statement coverage.",
+                "recommendations": ["Add fuzz testing for token decoding."],
+            }
+        )
 
         test_results = {
             "status": "passed",
@@ -511,18 +501,18 @@ CREATE TABLE users (id VARCHAR(36) PRIMARY KEY, email VARCHAR(255) UNIQUE);
         """SecurityEngineerAgent should process scanner findings context."""
         from app.agents.security_engineer import SecurityEngineerAgent
 
-        proj = await _create_project(
-            async_client, {"name": "Security Engineer Context"}
-        )
+        proj = await _create_project(async_client, {"name": "Security Engineer Context"})
         project_id = proj["id"]
 
-        sec_json = json.dumps({
-            "overall_risk": "low",
-            "findings": [],
-            "approved_for_deployment": True,
-            "summary": "No critical or high vulnerabilities detected.",
-            "recommendations": ["Rotate staging credentials periodically."],
-        })
+        sec_json = json.dumps(
+            {
+                "overall_risk": "low",
+                "findings": [],
+                "approved_for_deployment": True,
+                "summary": "No critical or high vulnerabilities detected.",
+                "recommendations": ["Rotate staging credentials periodically."],
+            }
+        )
 
         scanner_findings = [
             {
@@ -568,7 +558,7 @@ class TestSecurityScannerIntegration:
         scanner = SecurityScannerService()
         clean_code = (
             "def calculate_sum(a: int, b: int) -> int:\n"
-            "    \"\"\"Add two numbers.\"\"\"\n"
+            '    """Add two numbers."""\n'
             "    return a + b\n\n"
             "def greet(name: str) -> str:\n"
             "    return f'Hello, {name}!'\n"
@@ -625,9 +615,7 @@ class TestSecurityScannerIntegration:
         proj = await _create_project(async_client, {"name": "Security API Scan"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/security/scan"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/security/scan")
         assert resp.status_code == 200
         body = resp.json()
         assert "project_id" in body
@@ -655,9 +643,7 @@ class TestSecurityScannerIntegration:
 class TestQARunnerIntegration:
     """Integration tests for the QARunnerService."""
 
-    async def test_run_tests_no_files_returns_not_executed(
-        self, async_client: AsyncClient
-    ):
+    async def test_run_tests_no_files_returns_not_executed(self, async_client: AsyncClient):
         """When no test files exist, QA runner should report not_executed."""
         from app.services.qa_runner import QARunnerService
 
@@ -680,9 +666,7 @@ class TestQARunnerIntegration:
         proj = await _create_project(async_client, {"name": "QA Test Files API"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/qa/test-files"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/qa/test-files")
         assert resp.status_code == 200
         body = resp.json()
         assert "test_files" in body
@@ -693,17 +677,13 @@ class TestQARunnerIntegration:
         proj = await _create_project(async_client, {"name": "QA Run Tests API"})
         project_id = proj["id"]
 
-        resp = await async_client.post(
-            f"/api/v1/projects/{project_id}/qa/run-tests"
-        )
+        resp = await async_client.post(f"/api/v1/projects/{project_id}/qa/run-tests")
         assert resp.status_code == 200
         body = resp.json()
         assert "project_id" in body
         assert body["project_id"] == project_id
         assert "status" in body
-        assert body["status"] in (
-            "passed", "failed", "not_executed", "inconclusive"
-        )
+        assert body["status"] in ("passed", "failed", "not_executed", "inconclusive")
         assert "total_tests" in body
         assert "bugs" in body
 
@@ -721,9 +701,7 @@ class TestWorkspaceIntegration:
         proj = await _create_project(async_client, {"name": "Workspace Files Test"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/files"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/files")
         assert resp.status_code == 200
         body = resp.json()
         assert "files" in body
@@ -734,9 +712,7 @@ class TestWorkspaceIntegration:
         proj = await _create_project(async_client, {"name": "Git Status Test"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/git/status"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/git/status")
         assert resp.status_code == 200
         body = resp.json()
         assert "project_id" in body
@@ -755,9 +731,7 @@ class TestWorkspaceIntegration:
 
     async def test_path_traversal_protection(self, async_client: AsyncClient):
         """Attempt to read a file outside the project sandbox must be blocked."""
-        proj = await _create_project(
-            async_client, {"name": "Path Traversal Protection"}
-        )
+        proj = await _create_project(async_client, {"name": "Path Traversal Protection"})
         project_id = proj["id"]
 
         resp = await async_client.get(
@@ -810,24 +784,22 @@ class TestArtifactIntegration:
         assert artifact_data["name"] == "requirements.md"
         assert artifact_data["artifact_type"] == "requirements"
 
-    async def test_get_specific_artifact(
-        self, async_client: AsyncClient, db_session: AsyncSession
-    ):
+    async def test_get_specific_artifact(self, async_client: AsyncClient, db_session: AsyncSession):
         """Fetching a named artifact returns its content."""
         proj = await _create_project(async_client, {"name": "Get Artifact Test"})
         project_id = proj["id"]
 
-        db_session.add(Artifact(
-            project_id=project_id,
-            name="architecture.md",
-            artifact_type="architecture",
-            content="# Architecture\n\nFastAPI + SQLite",
-        ))
+        db_session.add(
+            Artifact(
+                project_id=project_id,
+                name="architecture.md",
+                artifact_type="architecture",
+                content="# Architecture\n\nFastAPI + SQLite",
+            )
+        )
         await db_session.commit()
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/artifacts/architecture.md"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/artifacts/architecture.md")
         assert resp.status_code == 200
         body = resp.json()
         assert body["name"] == "architecture.md"
@@ -842,28 +814,26 @@ class TestArtifactIntegration:
 class TestAgentRunPaginationIntegration:
     """Verify agent-run pagination works across multiple runs."""
 
-    async def test_agent_runs_pagination(
-        self, async_client: AsyncClient, db_session: AsyncSession
-    ):
+    async def test_agent_runs_pagination(self, async_client: AsyncClient, db_session: AsyncSession):
         """Agent runs should be paginatable with correct total count."""
-        proj = await _create_project(
-            async_client, {"name": "Agent Run Pagination Test"}
-        )
+        proj = await _create_project(async_client, {"name": "Agent Run Pagination Test"})
         project_id = proj["id"]
 
         # Insert 5 agent runs
         for i in range(5):
-            db_session.add(AgentRun(
-                project_id=project_id,
-                agent_definition_id="software-developer",
-                status="success",
-                output_summary=f"Output {i}",
-                prompt_tokens=10,
-                completion_tokens=20,
-                total_tokens=30,
-                duration_seconds=0.5,
-                model_used="qwen2.5-coder:7b",
-            ))
+            db_session.add(
+                AgentRun(
+                    project_id=project_id,
+                    agent_definition_id="software-developer",
+                    status="success",
+                    output_summary=f"Output {i}",
+                    prompt_tokens=10,
+                    completion_tokens=20,
+                    total_tokens=30,
+                    duration_seconds=0.5,
+                    model_used="qwen2.5-coder:7b",
+                )
+            )
         await db_session.commit()
 
         # Fetch page 1 with page_size=3
@@ -924,9 +894,7 @@ class TestHealthIntegration:
 class TestRepairLoopIntegration:
     """Tests for the closed-loop repair mechanism."""
 
-    async def test_repair_loop_respects_max_attempts_setting(
-        self, async_client: AsyncClient
-    ):
+    async def test_repair_loop_respects_max_attempts_setting(self, async_client: AsyncClient):
         """Project created with max_repair_attempts=1 stores this value."""
         proj = await _create_project(
             async_client,
@@ -936,9 +904,7 @@ class TestRepairLoopIntegration:
 
     async def test_failed_project_can_be_restarted(self, async_client: AsyncClient):
         """A failed project status can be reset to pending for a fresh run."""
-        proj = await _create_project(
-            async_client, {"name": "Failed Restart Test"}
-        )
+        proj = await _create_project(async_client, {"name": "Failed Restart Test"})
         project_id = proj["id"]
 
         # Simulate a failed workflow
@@ -953,9 +919,7 @@ class TestRepairLoopIntegration:
 
         # Restart workflow
         with patch_workflow_background():
-            resp = await async_client.post(
-                f"/api/v1/projects/{project_id}/workflow/start"
-            )
+            resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/start")
         assert resp.status_code == 200
 
     async def test_workflow_event_logged_on_repair(
@@ -965,18 +929,18 @@ class TestRepairLoopIntegration:
         proj = await _create_project(async_client, {"name": "Repair Event Log"})
         project_id = proj["id"]
 
-        db_session.add(WorkflowEvent(
-            project_id=project_id,
-            event_type="repair_attempt",
-            message="Developer repair attempt 1/2",
-            severity="warning",
-            payload={"attempt": 1, "max_attempts": 2},
-        ))
+        db_session.add(
+            WorkflowEvent(
+                project_id=project_id,
+                event_type="repair_attempt",
+                message="Developer repair attempt 1/2",
+                severity="warning",
+                payload={"attempt": 1, "max_attempts": 2},
+            )
+        )
         await db_session.commit()
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/workflow/status"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/workflow/status")
         assert resp.status_code == 200
         events = resp.json()["recent_events"]
         repair_events = [e for e in events if e.get("event_type") == "repair_attempt"]

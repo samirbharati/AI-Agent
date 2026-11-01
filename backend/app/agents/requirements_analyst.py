@@ -100,9 +100,7 @@ Please produce a complete requirements document following the specified format.
         }
         missing = required - set(sections.keys())
         if missing:
-            raise ValueError(
-                f"Requirements output is missing required sections: {sorted(missing)}"
-            )
+            raise ValueError(f"Requirements output is missing required sections: {sorted(missing)}")
 
         # Count functional requirements
         fr_text = sections.get("Functional Requirements", "")

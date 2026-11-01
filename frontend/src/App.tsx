@@ -32,9 +32,11 @@ import { LiveLogs } from './components/LiveLogs';
 import { ArtifactViewer } from './components/ArtifactViewer';
 import { WorkspaceExplorer } from './components/WorkspaceExplorer';
 import { QASecurityPanel } from './components/QASecurityPanel';
+import { LogsCenter } from './components/monitoring/LogsCenter';
 import { FolderGit2, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'workspace' | 'monitoring'>('workspace');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -214,10 +216,18 @@ export const App: React.FC = () => {
         }}
         isRefreshing={isRefreshing}
         health={health}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        {selectedProject ? (
+        {viewMode === 'monitoring' ? (
+          <LogsCenter
+            projects={projects}
+            selectedProject={selectedProject}
+            health={health}
+          />
+        ) : selectedProject ? (
           <>
             {/* Project Overview Card */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
@@ -273,6 +283,7 @@ export const App: React.FC = () => {
                 events={events}
                 onClear={() => setEvents([])}
                 isConnected={isStreamConnected}
+                onOpenMonitoringCenter={() => setViewMode('monitoring')}
               />
             </div>
 

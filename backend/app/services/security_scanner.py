@@ -106,7 +106,9 @@ _CODE_VULN_PATTERNS = [
         "VULN-003",
         "Subprocess with shell=True",
         "high",
-        re.compile(r"\bsubprocess\.(?:call|run|Popen|check_output|check_call)\s*\([^)]*shell\s*=\s*True"),
+        re.compile(
+            r"\bsubprocess\.(?:call|run|Popen|check_output|check_call)\s*\([^)]*shell\s*=\s*True"
+        ),
         "subprocess with shell=True is vulnerable to command injection. Pass command lists.",
     ),
     (
@@ -177,7 +179,11 @@ class SecurityScannerService:
                 if match:
                     # Redact evidence if it looks like a real secret
                     raw_val = match.group(0)
-                    redacted = raw_val[:4] + "*" * (len(raw_val) - 6) + raw_val[-2:] if len(raw_val) > 8 else "***"
+                    redacted = (
+                        raw_val[:4] + "*" * (len(raw_val) - 6) + raw_val[-2:]
+                        if len(raw_val) > 8
+                        else "***"
+                    )
                     findings.append(
                         SecurityFinding(
                             id=f"{rule_id}-{line_idx}",
@@ -277,4 +283,3 @@ def get_security_scanner() -> SecurityScannerService:
     if _security_scanner is None:
         _security_scanner = SecurityScannerService()
     return _security_scanner
-

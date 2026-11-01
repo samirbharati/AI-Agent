@@ -99,7 +99,9 @@ class QARunnerService:
                             title="No automated tests found in workspace",
                             severity="high",
                             test_name=None,
-                            steps_to_reproduce=["Search workspace for test_*.py or *_test.py files"],
+                            steps_to_reproduce=[
+                                "Search workspace for test_*.py or *_test.py files"
+                            ],
                             expected_result="Project should include unit test fixtures for implemented modules",
                             actual_result="0 test files discovered",
                             stacktrace=None,
@@ -193,21 +195,25 @@ class QARunnerService:
         for h in failure_headers:
             name = h.strip()
             if name != "FAILURES":
-                failures.append({
-                    "test_name": name,
-                    "error_message": f"Failure in test: {name}",
-                    "stacktrace": None,
-                })
+                failures.append(
+                    {
+                        "test_name": name,
+                        "error_message": f"Failure in test: {name}",
+                        "stacktrace": None,
+                    }
+                )
 
         # 2. Match from short summary lines: "FAILED tests/test_fail.py::test_intentional_failure - ..."
         if not failures:
             for match in re.finditer(r"^FAILED\s+([^\s-]+)", output, re.MULTILINE):
                 t_name = match.group(1).strip()
-                failures.append({
-                    "test_name": t_name,
-                    "error_message": f"Failure in test: {t_name}",
-                    "stacktrace": None,
-                })
+                failures.append(
+                    {
+                        "test_name": t_name,
+                        "error_message": f"Failure in test: {t_name}",
+                        "stacktrace": None,
+                    }
+                )
 
         return {
             "passed": passed,

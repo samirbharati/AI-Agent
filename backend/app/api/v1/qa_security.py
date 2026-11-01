@@ -113,4 +113,3 @@ async def discover_project_test_files(
         "total": len(files),
         "test_files": files,
     }
-

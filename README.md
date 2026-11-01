@@ -104,6 +104,24 @@ AgentForge deploys 7 specialized agents cooperating through human-in-the-loop re
 | 6 | **Security Engineer** | Secret detection, OWASP audits, input validation | `security_report.md` |
 | 7 | **Code Reviewer** | Independent quality governance, style & acceptance check | Code review summary & approvals |
 
+---
+
+## Advanced Logs & Monitoring Center
+
+AgentForge features an enterprise-grade Observability & Security Operations Center (SOC) dashboard designed for monitoring multi-agent software engineering workflows in real time:
+
+- **SOC Health & Summary Command Bar:** Live system health indicators (Ollama connection, backend status, active model, DB health, running workflows) and metrics for total events, successes, warnings, errors, and critical security alerts.
+- **Developer Live Terminal Stream:** High-density `#070A10` terminal with millisecond-precision timestamps, colored log-level badges (`INFO`, `AGENT`, `TOOL`, `SUCCESS`, `WARNING`, `ERROR`, `CRITICAL`), pause/resume auto-scroll, unread event indicators, and an interactive slide-over event inspector drawer.
+- **Agent Activity Monitor:** Real-time state tracking (`IDLE`, `RUNNING`, `COMPLETED`, `FAILED`), active task assignments, duration timers, and task history across all 7 agents.
+- **LLM Intelligence Monitor:** Local inference telemetry tracking request durations, token counts (eval/prompt tokens), context window sizing, model status, and prompt/response inspection.
+- **Tool & Execution Activity:** Comprehensive logs of file operations (read/write/edit), Git operations, test runners, and process exit codes.
+- **Incident & Bug Intelligence:** Automated defect discovery records with severity levels, reproduction steps, affected files, and repair attempt histories.
+- **Security Event Monitor:** Vulnerability audit trails, AST security checks, and secret scanner detections with automated redaction.
+- **Multi-Format Log Exporter:** Instant export of filtered logs to JSON, CSV, Markdown, or plain text formats.
+- **Context-Aware Correlation & Redaction:** Distributed trace IDs (`trace_id`, `span_id`) with automatic redaction of AWS keys, GitHub PATs, JWTs, and private credentials.
+
+---
+
 
 ## Running Tests
 
@@ -172,11 +190,19 @@ agentforge/
 │   │   ├── main.py           ← FastAPI app factory
 │   │   ├── config.py         ← Pydantic Settings
 │   │   ├── database/         ← SQLAlchemy engine, init, ORM models
+│   │   ├── logging/          ← EventService, correlation IDs, secret redaction
 │   │   ├── models/           ← Database ORM models
 │   │   ├── schemas/          ← Pydantic request/response schemas
-│   │   ├── api/v1/           ← REST endpoints
-│   │   └── services/         ← Ollama service, LLM client (Phase 3)
-│   └── tests/                ← pytest test suite
+│   │   ├── api/v1/           ← REST endpoints & /monitoring/ router
+│   │   └── services/         ← Ollama service, agent runners, workflow orchestrator
+│   └── tests/                ← pytest test suite (189 tests)
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── monitoring/   ← LiveTerminal, AgentActivityGrid, LLMMonitorPanel, etc.
+│   │   │   └── ...           ← Workspace, AgentCards, ProjectList, ReviewPanel
+│   │   ├── services/         ← API client & SSE stream connectors
+│   │   └── types/            ← TypeScript domain & monitoring schemas
 ├── workspace/projects/       ← Generated project files (gitignored)
 └── docs/                     ← Architecture and development docs
 ```
@@ -222,7 +248,7 @@ Use system Python directly: `python -m pip install ...`
 
 ## Testing
 
-The platform includes a comprehensive automated test suite with **170 passing tests**:
+The platform includes a comprehensive automated test suite with **189 passing tests**:
 
 ```powershell
 # From agentforge/backend/
@@ -237,6 +263,7 @@ Test Breakdown:
 - `tests/test_qa_security.py` (16 tests) — QA test discovery/execution, deterministic security scanner, secret patterns
 - `tests/test_workflow.py` (32 tests) — workflow state machine, agent invocations, approval gates, SSE events
 - `tests/test_integration.py` (39 tests) — Phase 7 end-to-end integration across all subsystems
+- `tests/test_monitoring.py` (19 tests) — Advanced Monitoring Center, event stream filtering, telemetry, redaction & log export
 
 Linting:
 ```powershell
@@ -256,6 +283,7 @@ python -m ruff check app/ tests/
 | Phase 5 | ✅ Complete | Workspace filesystem isolation, Git branch management, sandboxed execution runner |
 | Phase 6 | ✅ Complete | Automated QA runner, deterministic security scanner, repair loop, QA/Security UI |
 | Phase 7 | ✅ Complete | End-to-end integration testing (39 integration tests, 170 total passed, 0 lint errors) |
+| Phase 8 | ✅ Complete | Advanced Logs & Monitoring Center (SOC dashboard, developer terminal stream, LLM & tool monitors, security audits, log export) |
 
 ---
 

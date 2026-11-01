@@ -217,3 +217,123 @@ export function connectWorkflowEvents(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Monitoring & Observability API
+// ---------------------------------------------------------------------------
+
+export async function getMonitoringEvents(params: {
+  project_id?: string;
+  severity?: string;
+  source?: string;
+  category?: string;
+  status?: string;
+  search?: string;
+  time_range?: string;
+  trace_id?: string;
+  task_id?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<{ items: import('../types').MonitoringEvent[]; total: number; page: number; page_size: number; total_pages: number }> {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '' && val !== 'all') {
+      query.set(key, String(val));
+    }
+  });
+  return request(`/monitoring/events?${query.toString()}`);
+}
+
+export async function getMonitoringStats(projectId?: string): Promise<import('../types').MonitoringStats> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/monitoring/stats${query}`);
+}
+
+export async function getAgentMonitoringStates(projectId?: string): Promise<import('../types').AgentMonitoringState[]> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/monitoring/agents${query}`);
+}
+
+export async function getLLMRequests(projectId?: string): Promise<import('../types').LLMIntelligenceReport> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/monitoring/llm-requests${query}`);
+}
+
+export async function getToolExecutions(projectId?: string): Promise<import('../types').ToolExecutionRecord[]> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/monitoring/tools${query}`);
+}
+
+export async function getIncidents(projectId?: string): Promise<import('../types').IncidentRecord[]> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/monitoring/incidents${query}`);
+}
+
+export async function getMonitoringSecurityEvents(projectId?: string): Promise<import('../types').SecurityFinding[]> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/monitoring/security-events${query}`);
+}
+
+export function getLogsExportUrl(params: {
+  format: string;
+  project_id?: string;
+  severity?: string;
+  source?: string;
+  category?: string;
+  search?: string;
+}): string {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '' && v !== 'all') {
+      query.set(k, String(v));
+    }
+  });
+  return `${API_BASE}/monitoring/export?${query.toString()}`;
+}
+
+export function connectMonitoringStream(
+  onEvent: (event: import('../types').MonitoringEvent) => void,
+  onError?: (err: any) => void,
+  projectId?: string,
+  lastEventId?: string,
+): () => void {
+  const query = new URLSearchParams();
+  if (projectId && projectId !== 'all') query.set('project_id', projectId);
+  if (lastEventId) query.set('last_event_id', lastEventId);
+
+  const url = `${API_BASE}/monitoring/stream?${query.toString()}`;
+  const eventSource = new EventSource(url);
+
+  eventSource.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.id && data.message) {
+        onEvent({
+          id: data.id,
+          project_id: data.project_id,
+          event_type: data.event_type,
+          message: data.message,
+          severity: data.severity || 'info',
+          source: data.source || 'system',
+          category: data.category || 'system',
+          status: data.status || data.severity || 'info',
+          task_id: data.task_id,
+          trace_id: data.trace_id,
+          duration_ms: data.duration_ms,
+          payload: data.payload || {},
+          timestamp: data.timestamp || new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to parse monitoring stream event:', err);
+    }
+  };
+
+  eventSource.onerror = (err) => {
+    onError?.(err);
+  };
+
+  return () => {
+    eventSource.close();
+  };
+}
+

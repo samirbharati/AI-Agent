@@ -80,17 +80,25 @@ class CodeReviewerAgent(BaseAgent):
                 files_text += f"\n--- {path} ---\n{content}\n"
 
         qa_summary = (
-            f"QA Verdict: {qa_report.get('verdict', 'unknown')}\n"
-            f"Bugs found: {qa_report.get('total_bugs', 0)}\n"
-            f"Coverage: {qa_report.get('coverage_assessment', 'not provided')}"
-        ) if qa_report else "No QA report available."
+            (
+                f"QA Verdict: {qa_report.get('verdict', 'unknown')}\n"
+                f"Bugs found: {qa_report.get('total_bugs', 0)}\n"
+                f"Coverage: {qa_report.get('coverage_assessment', 'not provided')}"
+            )
+            if qa_report
+            else "No QA report available."
+        )
 
         sec_summary = (
-            f"Security Risk: {security_report.get('overall_risk', 'unknown')}\n"
-            f"Critical findings: {security_report.get('critical_finding_count', 0)}\n"
-            f"High findings: {security_report.get('high_finding_count', 0)}\n"
-            f"Approved for deployment: {security_report.get('approved_for_deployment', False)}"
-        ) if security_report else "No security report available."
+            (
+                f"Security Risk: {security_report.get('overall_risk', 'unknown')}\n"
+                f"Critical findings: {security_report.get('critical_finding_count', 0)}\n"
+                f"High findings: {security_report.get('high_finding_count', 0)}\n"
+                f"Approved for deployment: {security_report.get('approved_for_deployment', False)}"
+            )
+            if security_report
+            else "No security report available."
+        )
 
         user_content = f"""\
 Task Title: {task_title}

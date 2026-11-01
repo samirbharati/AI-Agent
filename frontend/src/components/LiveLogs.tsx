@@ -1,14 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Terminal, Pause, Play, Trash2 } from 'lucide-react';
+import { Terminal, Pause, Play, Trash2, Maximize2 } from 'lucide-react';
 import type { WorkflowEvent } from '../types';
 
 interface LiveLogsProps {
   events: WorkflowEvent[];
   onClear: () => void;
   isConnected: boolean;
+  onOpenMonitoringCenter?: () => void;
 }
 
-export const LiveLogs: React.FC<LiveLogsProps> = ({ events, onClear, isConnected }) => {
+export const LiveLogs: React.FC<LiveLogsProps> = ({
+  events,
+  onClear,
+  isConnected,
+  onOpenMonitoringCenter,
+}) => {
   const [autoScroll, setAutoScroll] = useState(true);
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -86,6 +92,18 @@ export const LiveLogs: React.FC<LiveLogsProps> = ({ events, onClear, isConnected
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
+
+          {/* Open Command Center */}
+          {onOpenMonitoringCenter && (
+            <button
+              onClick={onOpenMonitoringCenter}
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800 text-cyan-300 hover:bg-cyan-900/80 text-[11px] font-mono transition"
+              title="Open full SOC Monitoring Center"
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span className="hidden sm:inline">Command Center</span>
+            </button>
+          )}
         </div>
       </div>
 

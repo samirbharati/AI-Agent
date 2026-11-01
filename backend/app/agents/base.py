@@ -21,7 +21,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.db_models import AgentRun
+from app.logging.correlation import get_current_trace_id
+from app.models.db_models import AgentRun, ModelUsageStat, WorkflowEvent
 from app.services.llm_client import LLMClientConfig, LLMMessage, LLMResponse, OllamaLLMClient
 
 logger = logging.getLogger(__name__)
@@ -37,8 +38,8 @@ class AgentResult:
     """Structured output from any agent run."""
 
     agent_id: str
-    status: str                         # "success" | "failure" | "error"
-    output: str                         # Raw text output from the LLM
+    status: str  # "success" | "failure" | "error"
+    output: str  # Raw text output from the LLM
     parsed: dict[str, Any] = field(default_factory=dict)  # Structured data extracted from output
     error: str | None = None
     prompt_tokens: int = 0
@@ -171,9 +172,7 @@ class BaseAgent(ABC):
                 duration_seconds=elapsed,
                 model=llm_response.model,
             )
-            logger.error(
-                "Agent '%s' run %s failed: %s", self.agent_id, run_id, llm_response.error
-            )
+            logger.error("Agent '%s' run %s failed: %s", self.agent_id, run_id, llm_response.error)
             await self._log_run(db, project_id, run_id, result, system_prompt)
             return result
 
@@ -183,9 +182,7 @@ class BaseAgent(ABC):
             status = "success"
             error = None
         except Exception as exc:  # noqa: BLE001
-            logger.warning(
-                "Agent '%s' run %s: output parse failed: %s", self.agent_id, run_id, exc
-            )
+            logger.warning("Agent '%s' run %s: output parse failed: %s", self.agent_id, run_id, exc)
             parsed = {}
             status = "failure"
             error = f"Output parse failed: {exc}"
@@ -235,7 +232,9 @@ class BaseAgent(ABC):
                 project_id=project_id,
                 agent_definition_id=self.agent_id,
                 status=result.status,
-                input_summary=f"context keys: {list(result.parsed.keys())}" if result.parsed else "",
+                input_summary=f"context keys: {list(result.parsed.keys())}"
+                if result.parsed
+                else "",
                 output_summary=result.output[:500] if result.output else "",
                 error_message=result.error,
                 prompt_tokens=result.prompt_tokens,
@@ -247,6 +246,46 @@ class BaseAgent(ABC):
                 completed_at=datetime.now(UTC),
             )
             db.add(run)
+
+            if result.model:
+                stat = ModelUsageStat(
+                    project_id=project_id,
+                    agent_run_id=run_id,
+                    model_name=result.model,
+                    agent_role=self.agent_id,
+                    duration_seconds=result.duration_seconds,
+                    token_count_in=result.prompt_tokens,
+                    token_count_out=result.completion_tokens,
+                    success=result.success,
+                    error_type=result.error if not result.success else None,
+                    created_at=datetime.now(UTC),
+                )
+                db.add(stat)
+
+            if project_id:
+                event = WorkflowEvent(
+                    project_id=project_id,
+                    agent_run_id=run_id,
+                    event_type=f"agent_{result.status}",
+                    message=f"[{self.agent_name}] execution {result.status}. Tokens: {result.total_tokens}. Duration: {result.duration_seconds:.2f}s",
+                    severity="success"
+                    if result.success
+                    else ("warning" if result.status == "failure" else "error"),
+                    source=self.agent_id,
+                    category="agent_lifecycle",
+                    status=result.status,
+                    trace_id=get_current_trace_id(),
+                    duration_ms=int((result.duration_seconds or 0) * 1000),
+                    payload={
+                        "model": result.model,
+                        "prompt_tokens": result.prompt_tokens,
+                        "completion_tokens": result.completion_tokens,
+                        "total_tokens": result.total_tokens,
+                    },
+                    created_at=datetime.now(UTC),
+                )
+                db.add(event)
+
             await db.flush()
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to log agent run to DB: %s", exc)

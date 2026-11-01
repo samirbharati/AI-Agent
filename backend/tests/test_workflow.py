@@ -84,9 +84,7 @@ def patch_agent_llm(response_text: str = "# Agent output\n\nContent."):
 
 class TestWorkflowStart:
     async def test_start_workflow_project_not_found(self, async_client: AsyncClient):
-        resp = await async_client.post(
-            "/api/v1/projects/nonexistent-id/workflow/start"
-        )
+        resp = await async_client.post("/api/v1/projects/nonexistent-id/workflow/start")
         assert resp.status_code == 404
         detail = resp.json()["detail"]
         if isinstance(detail, dict):
@@ -99,9 +97,7 @@ class TestWorkflowStart:
         project_id = proj["id"]
 
         with patch_workflow_background():
-            resp = await async_client.post(
-                f"/api/v1/projects/{project_id}/workflow/start"
-            )
+            resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/start")
         assert resp.status_code == 200
         body = resp.json()
         assert body["status"] == "ok"
@@ -116,9 +112,7 @@ class TestWorkflowStart:
         await _set_project_status(async_client, project_id, "in_progress")
 
         with patch_workflow_background():
-            resp = await async_client.post(
-                f"/api/v1/projects/{project_id}/workflow/start"
-            )
+            resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/start")
         assert resp.status_code == 409
         detail = resp.json()["detail"]
         if isinstance(detail, dict):
@@ -129,9 +123,7 @@ class TestWorkflowStart:
         proj = await _create_project(async_client, {"name": "Resume Fail Test"})
         project_id = proj["id"]
 
-        resp = await async_client.post(
-            f"/api/v1/projects/{project_id}/workflow/resume"
-        )
+        resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/resume")
         assert resp.status_code == 409
         detail = resp.json()["detail"]
         if isinstance(detail, dict):
@@ -149,9 +141,7 @@ class TestWorkflowStart:
         await _set_project_status(async_client, project_id, "requirements_approved")
 
         with patch_workflow_background():
-            resp = await async_client.post(
-                f"/api/v1/projects/{project_id}/workflow/resume"
-            )
+            resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/resume")
         assert resp.status_code == 200
         body = resp.json()
         assert body["status"] == "ok"
@@ -163,9 +153,7 @@ class TestWorkflowStart:
         await _set_project_status(async_client, project_id, "architecture_approved")
 
         with patch_workflow_background():
-            resp = await async_client.post(
-                f"/api/v1/projects/{project_id}/workflow/resume"
-            )
+            resp = await async_client.post(f"/api/v1/projects/{project_id}/workflow/resume")
         assert resp.status_code == 200
 
 
@@ -178,9 +166,7 @@ class TestWorkflowStatus:
         proj = await _create_project(async_client, {"name": "Status Test Project"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/workflow/status"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/workflow/status")
         assert resp.status_code == 200
         body = resp.json()
         assert body["project_id"] == project_id
@@ -196,9 +182,7 @@ class TestWorkflowStatus:
         proj = await _create_project(async_client, {"name": "Named Status Project"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/workflow/status"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/workflow/status")
         assert resp.status_code == 200
         assert resp.json()["project_name"] == "Named Status Project"
 
@@ -206,9 +190,7 @@ class TestWorkflowStatus:
         proj = await _create_project(async_client, {"name": "Events List Test"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/workflow/status"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/workflow/status")
         assert isinstance(resp.json()["recent_events"], list)
 
 
@@ -232,9 +214,7 @@ class TestArtifacts:
         proj = await _create_project(async_client, {"name": "Artifact 404"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/artifacts/missing.md"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/artifacts/missing.md")
         assert resp.status_code == 404
         detail = resp.json()["detail"]
         if isinstance(detail, dict):
@@ -245,9 +225,7 @@ class TestArtifacts:
         assert resp.status_code == 404
 
     async def test_get_artifact_project_not_found(self, async_client: AsyncClient):
-        resp = await async_client.get(
-            "/api/v1/projects/nope/artifacts/requirements.md"
-        )
+        resp = await async_client.get("/api/v1/projects/nope/artifacts/requirements.md")
         assert resp.status_code == 404
 
 
@@ -261,9 +239,7 @@ class TestAgentRuns:
         proj = await _create_project(async_client, {"name": "Agent Runs Project"})
         project_id = proj["id"]
 
-        resp = await async_client.get(
-            f"/api/v1/projects/{project_id}/agent-runs"
-        )
+        resp = await async_client.get(f"/api/v1/projects/{project_id}/agent-runs")
         assert resp.status_code == 200
         body = resp.json()
         assert body["total"] == 0
@@ -457,15 +433,17 @@ class TestTaskPlannerAgent:
 
         proj = await _create_project(async_client, {"name": "TP Agent Test"})
 
-        task_json = json.dumps([
-            {
-                "title": "Setup project",
-                "description": "Init repo and structure",
-                "priority": "high",
-                "estimated_hours": 2,
-                "acceptance_criteria": "Project runs",
-            }
-        ])
+        task_json = json.dumps(
+            [
+                {
+                    "title": "Setup project",
+                    "description": "Init repo and structure",
+                    "priority": "high",
+                    "estimated_hours": 2,
+                    "acceptance_criteria": "Project runs",
+                }
+            ]
+        )
         with patch_agent_llm(task_json):
             agent = TaskPlannerAgent()
             result = await agent.run(
@@ -586,15 +564,18 @@ class TestWorkflowEventInsert:
 
         severities = ["debug", "info", "warning", "error", "critical"]
         for sev in severities:
-            db_session.add(WorkflowEvent(
-                project_id=project_id,
-                event_type="severity_test",
-                message=f"Test {sev}",
-                severity=sev,
-            ))
+            db_session.add(
+                WorkflowEvent(
+                    project_id=project_id,
+                    event_type="severity_test",
+                    message=f"Test {sev}",
+                    severity=sev,
+                )
+            )
         await db_session.commit()
 
         from sqlalchemy import select
+
         result = await db_session.execute(
             select(WorkflowEvent).where(WorkflowEvent.project_id == project_id)
         )
