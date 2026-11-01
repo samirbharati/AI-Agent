@@ -79,6 +79,18 @@ class QAEngineerAgent(BaseAgent):
             for path, content in implemented_files.items():
                 files_text += f"\n--- {path} ---\n{content}\n"
 
+        test_results_text = ""
+        test_results = context.get("test_results")
+        if test_results:
+            test_results_text = f"""
+Automated Test Execution Results:
+Status: {test_results.get('status')}
+Passed: {test_results.get('passed_count', 0)} / {test_results.get('total_tests', 0)}
+Failed: {test_results.get('failed_count', 0)}
+Stdout/Stderr Diagnostic Output:
+{test_results.get('raw_stderr') or test_results.get('raw_stdout') or 'None'}
+"""
+
         user_content = f"""\
 Task Title: {task_title}
 
@@ -90,7 +102,7 @@ Architecture Context:
 
 Implemented Files to Review:
 {files_text or "No files provided."}
-
+{test_results_text}
 Review the implementation and produce a QA report. Output only valid JSON.
 """
         return [LLMMessage(role="user", content=user_content)]

@@ -46,7 +46,9 @@ from app.models.db_models import (
     TaskExecutionAttempt,
     WorkflowEvent,
 )
+from app.services.qa_runner import get_qa_runner
 from app.services.runner import get_execution_runner
+from app.services.security_scanner import get_security_scanner
 from app.services.workspace import get_workspace_service
 
 logger = logging.getLogger(__name__)
@@ -449,7 +451,10 @@ async def _run_task_pipeline(
         # Commit verified files to the task branch
         workspace.commit_all(ctx.project_id, f"feat: implement {task.title}")
 
-        # --- QA Review ---
+        # --- QA Automated Test Execution & Agent Review ---
+        qa_runner = get_qa_runner()
+        test_run = qa_runner.run_tests(ctx.project_id)
+
         qa_agent = QAEngineerAgent()
         qa_result = await qa_agent.run(
             {
@@ -457,32 +462,52 @@ async def _run_task_pipeline(
                 "acceptance_criteria": task.acceptance_criteria or "",
                 "implemented_files": implemented_files,
                 "architecture_summary": ctx.architecture_summary,
+                "test_results": {
+                    "status": test_run.status,
+                    "passed": test_run.passed,
+                    "passed_count": test_run.passed_count,
+                    "failed_count": test_run.failed_count,
+                    "total_tests": test_run.total_tests,
+                    "raw_stdout": test_run.raw_stdout,
+                    "raw_stderr": test_run.raw_stderr,
+                },
             },
             db=db,
             project_id=ctx.project_id,
         )
 
         qa_parsed = qa_result.parsed if qa_result.success else {}
+        # If automated tests ran and failed, test_run.passed overrides
         qa_passed = qa_parsed.get("passed", False)
+        if test_run.total_tests > 0 and not test_run.passed:
+            qa_passed = False
 
         if not qa_passed and qa_result.success:
-            bugs = qa_parsed.get("bugs", [])
-            bug_summary = "; ".join(b["title"] for b in bugs[:3])
+            bugs = qa_parsed.get("bugs", []) or test_run.bugs
+            bug_summary = "; ".join(b.get("title", "defect") for b in bugs[:3])
             prior_attempts.append({
                 "output": dev_result.output,
-                "error": f"QA failed: {bug_summary}",
+                "error": f"QA failed: {bug_summary}\nStdout: {test_run.raw_stdout}\nStderr: {test_run.raw_stderr}",
             })
             _update_attempt(attempt_record, "qa_failed", f"QA failed: {bug_summary}")
+            await _add_event(
+                db, ctx.project_id, "qa_verification_failed",
+                f"Task '{task.title}' QA defects: {bug_summary}", severity="warning"
+            )
             await db.flush()
             continue
 
-        # --- Security Review ---
+        # --- Deterministic Security Scan & Security Engineer Review ---
+        scanner = get_security_scanner()
+        scan_data = scanner.scan_project(ctx.project_id)
+
         sec_agent = SecurityEngineerAgent()
         sec_result = await sec_agent.run(
             {
                 "task_title": task.title,
                 "implemented_files": implemented_files,
                 "architecture_summary": ctx.architecture_summary,
+                "scanner_findings": scan_data.get("findings", []),
             },
             db=db,
             project_id=ctx.project_id,
@@ -490,17 +515,24 @@ async def _run_task_pipeline(
 
         sec_parsed = sec_result.parsed if sec_result.success else {}
         sec_approved = sec_parsed.get("approved_for_deployment", False)
+        # Deterministic scan override: if deterministic scanner found critical/high findings, reject
+        if not scan_data.get("approved_for_deployment", True):
+            sec_approved = False
 
         if not sec_approved and sec_result.success:
-            crit = sec_parsed.get("critical_finding_count", 0)
-            high = sec_parsed.get("high_finding_count", 0)
+            crit = max(sec_parsed.get("critical_finding_count", 0), scan_data.get("critical_count", 0))
+            high = max(sec_parsed.get("high_finding_count", 0), scan_data.get("high_count", 0))
             prior_attempts.append({
                 "output": dev_result.output,
-                "error": f"Security review failed: {crit} critical, {high} high findings.",
+                "error": f"Security review failed: {crit} critical, {high} high findings detected by security scanner.",
             })
             _update_attempt(
                 attempt_record, "security_failed",
                 f"Security: {crit} critical, {high} high findings"
+            )
+            await _add_event(
+                db, ctx.project_id, "security_verification_failed",
+                f"Task '{task.title}' security violations: {crit} critical, {high} high", severity="error"
             )
             await db.flush()
             continue

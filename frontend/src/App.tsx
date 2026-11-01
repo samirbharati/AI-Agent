@@ -31,6 +31,7 @@ import { TaskBoard } from './components/TaskBoard';
 import { LiveLogs } from './components/LiveLogs';
 import { ArtifactViewer } from './components/ArtifactViewer';
 import { WorkspaceExplorer } from './components/WorkspaceExplorer';
+import { QASecurityPanel } from './components/QASecurityPanel';
 import { FolderGit2, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -277,6 +278,9 @@ export const App: React.FC = () => {
 
             {/* Workspace Files & Git Isolation */}
             <WorkspaceExplorer projectId={selectedProject.id} />
+
+            {/* QA Automated Verification & Security Scan */}
+            <QASecurityPanel projectId={selectedProject.id} />
 
             {/* Generated Artifacts Viewer */}
             <ArtifactViewer projectId={selectedProject.id} artifacts={artifacts} />

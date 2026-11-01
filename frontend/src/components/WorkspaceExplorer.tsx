@@ -225,3 +225,4 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({ projectId 
     </div>
   );
 };
+

@@ -162,4 +162,56 @@ export interface GitStatus {
   untracked: string[];
 }
 
+export interface SecurityFinding {
+  id: string;
+  rule_id: string;
+  title: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  file_path: string;
+  line_number?: number;
+  evidence: string;
+  description: string;
+  remediation: string;
+}
+
+export interface SecurityScanReport {
+  project_id: string;
+  passed: boolean;
+  approved_for_deployment: boolean;
+  total_findings: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  findings: SecurityFinding[];
+  tools_detected: Record<string, { installed: boolean; path?: string; version?: string }>;
+}
+
+export interface BugReport {
+  id: string;
+  title: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  test_name?: string;
+  steps_to_reproduce: string[];
+  expected_result: string;
+  actual_result: string;
+  stacktrace?: string;
+}
+
+export interface QATestResult {
+  project_id: string;
+  passed: boolean;
+  status: string;
+  total_tests: number;
+  passed_count: number;
+  failed_count: number;
+  blocked_count: number;
+  not_executed_count: number;
+  duration_seconds: number;
+  bugs: BugReport[];
+  raw_stdout: string;
+  raw_stderr: string;
+}
+
+
 

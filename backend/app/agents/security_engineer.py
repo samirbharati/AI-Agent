@@ -78,6 +78,17 @@ class SecurityEngineerAgent(BaseAgent):
             for path, content in implemented_files.items():
                 files_text += f"\n--- {path} ---\n{content}\n"
 
+        scanner_text = ""
+        scanner_findings = context.get("scanner_findings", [])
+        if scanner_findings:
+            scanner_text = "\nDeterministic Scanner Rule Violations Detected:\n"
+            for f in scanner_findings:
+                scanner_text += (
+                    f"- [{f.get('severity', 'info').upper()}] {f.get('rule_id')}: {f.get('title')} "
+                    f"in {f.get('file_path')}:{f.get('line_number')} | Evidence: {f.get('evidence')} "
+                    f"| Remediation: {f.get('remediation')}\n"
+                )
+
         user_content = f"""\
 Task / Feature: {task_title}
 
@@ -86,7 +97,7 @@ Architecture Context:
 
 Files to Review:
 {files_text or "No files provided."}
-
+{scanner_text}
 Perform a thorough security review. Output only valid JSON.
 """
         return [LLMMessage(role="user", content=user_content)]

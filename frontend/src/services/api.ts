@@ -5,6 +5,8 @@ import type {
   GitStatus,
   Project,
   ProjectCreatePayload,
+  QATestResult,
+  SecurityScanReport,
   SystemHealth,
   Task,
   WorkflowEvent,
@@ -147,6 +149,33 @@ export async function getGitDiff(
 ): Promise<{ project_id: string; base_branch: string; diff: string }> {
   return request<{ project_id: string; base_branch: string; diff: string }>(
     `/projects/${projectId}/git/diff?base_branch=${encodeURIComponent(baseBranch)}`
+  );
+}
+
+// Security & QA operations
+export async function scanProjectSecurity(projectId: string): Promise<SecurityScanReport> {
+  return request<SecurityScanReport>(`/projects/${projectId}/security/scan`);
+}
+
+export async function getDetectedSecurityTools(): Promise<{
+  tools: Record<string, { installed: boolean; path?: string; version?: string }>;
+}> {
+  return request<{ tools: Record<string, { installed: boolean; path?: string; version?: string }> }>(
+    '/security/tools'
+  );
+}
+
+export async function runProjectTests(projectId: string, timeout = 60): Promise<QATestResult> {
+  return request<QATestResult>(`/projects/${projectId}/qa/run-tests?timeout=${timeout}`, {
+    method: 'POST',
+  });
+}
+
+export async function getProjectTestFiles(
+  projectId: string
+): Promise<{ project_id: string; total: number; test_files: string[] }> {
+  return request<{ project_id: string; total: number; test_files: string[] }>(
+    `/projects/${projectId}/qa/test-files`
   );
 }
 
