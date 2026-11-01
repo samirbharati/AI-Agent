@@ -1,0 +1,105 @@
+# ===== Secrets & Environment =====
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+pytest_cache/
+
+# Ruff
+.ruff_cache/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ===== Database =====
+*.db
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ===== Node.js / Frontend =====
+node_modules/
+dist/
+.next/
+out/
+.nuxt/
+.vite/
+*.tsbuildinfo
+
+# ===== Logs =====
+*.log
+logs/
+*.log.*
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDEs =====
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== AgentForge Workspace =====
+# Generated project files — never check these in
+workspace/projects/
+workspace/tmp/
+
+# ===== Docker =====
+.dockerignore
+docker-compose.override.yml
+
+# ===== Playwright =====
+test-results/
+playwright-report/
+playwright/.cache/
