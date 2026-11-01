@@ -220,17 +220,42 @@ Use system Python directly: `python -m pip install ...`
 
 ---
 
+## Testing
+
+The platform includes a comprehensive automated test suite with **170 passing tests**:
+
+```powershell
+# From agentforge/backend/
+python -m pytest tests/ -v
+```
+
+Test Breakdown:
+- `tests/test_config.py` (17 tests) — configuration & environment isolation
+- `tests/test_health.py` (11 tests) — health, Ollama availability, model detection
+- `tests/test_projects.py` (39 tests) — project CRUD, tasks, approval gates, pagination
+- `tests/test_workspace.py` (16 tests) — workspace filesystem isolation, Git branches, execution runner, path traversal defense
+- `tests/test_qa_security.py` (16 tests) — QA test discovery/execution, deterministic security scanner, secret patterns
+- `tests/test_workflow.py` (32 tests) — workflow state machine, agent invocations, approval gates, SSE events
+- `tests/test_integration.py` (39 tests) — Phase 7 end-to-end integration across all subsystems
+
+Linting:
+```powershell
+python -m ruff check app/ tests/
+```
+
+---
+
 ## Development Status
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| Phase 1 | ✅ Complete | Environment inspection, planning |
-| Phase 2 | ✅ Complete | FastAPI backend, SQLite, health checks, tests |
-| Phase 3 | ✅ Complete | Ollama client, agent definitions, workflow state machine, workflow APIs & tests |
-| Phase 4 | ✅ Complete | React + Vite + TypeScript frontend, SSE real-time dashboard |
-| Phase 5 | ✅ Complete | Autonomous workspace execution, Git branch isolation, path security, local runner |
-| Phase 6 | ⏳ Pending | QA testing execution, security scanners, automated repair loops |
-| Phase 7 | ⏳ Pending | End-to-end integration tests & validation |
+| Phase 1 | ✅ Complete | Environment inspection, architecture design, and project planning |
+| Phase 2 | ✅ Complete | FastAPI backend, SQLite persistence, health checks, project CRUD |
+| Phase 3 | ✅ Complete | Ollama client, 7 specialized agents, workflow state machine, SSE endpoints |
+| Phase 4 | ✅ Complete | React + Vite + TypeScript frontend, real-time SSE dashboard, approval gates |
+| Phase 5 | ✅ Complete | Workspace filesystem isolation, Git branch management, sandboxed execution runner |
+| Phase 6 | ✅ Complete | Automated QA runner, deterministic security scanner, repair loop, QA/Security UI |
+| Phase 7 | ✅ Complete | End-to-end integration testing (39 integration tests, 170 total passed, 0 lint errors) |
 
 ---
 
