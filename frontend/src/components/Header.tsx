@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Plus, RefreshCw, Terminal, CheckCircle2, AlertCircle, LayoutDashboard, Activity } from 'lucide-react';
+import { Cpu, Plus, RefreshCw, Terminal, CheckCircle2, AlertCircle, LayoutDashboard, Activity, Sparkles } from 'lucide-react';
 import type { Project, SystemHealth } from '../types';
 
 interface HeaderProps {
@@ -10,8 +10,8 @@ interface HeaderProps {
   onRefresh: () => void;
   isRefreshing: boolean;
   health: SystemHealth | null;
-  viewMode?: 'workspace' | 'terminal' | 'monitoring';
-  onViewModeChange?: (mode: 'workspace' | 'terminal' | 'monitoring') => void;
+  viewMode?: 'workspace' | 'terminal' | 'monitoring' | 'integrations';
+  onViewModeChange?: (mode: 'workspace' | 'terminal' | 'monitoring' | 'integrations') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -83,6 +83,18 @@ export const Header: React.FC<HeaderProps> = ({
               <Activity className="w-3.5 h-3.5 text-cyan-300" />
               <span>Monitoring Center</span>
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            </button>
+            <button
+              onClick={() => onViewModeChange('integrations')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                viewMode === 'integrations'
+                  ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-300" />
+              <span>Free Services</span>
+              <span className="w-2 h-2 rounded-full bg-purple-400" />
             </button>
           </div>
         )}

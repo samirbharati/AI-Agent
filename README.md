@@ -195,7 +195,7 @@ agentforge/
 │   │   ├── schemas/          ← Pydantic request/response schemas
 │   │   ├── api/v1/           ← REST endpoints & /monitoring/ router
 │   │   └── services/         ← Ollama service, agent runners, workflow orchestrator
-│   └── tests/                ← pytest test suite (204 tests)
+│   └── tests/                ← pytest test suite (218 tests)
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -248,7 +248,7 @@ Use system Python directly: `python -m pip install ...`
 
 ## Testing
 
-The platform includes a comprehensive automated test suite with **204 passing tests**:
+The platform includes a comprehensive automated test suite with **218 passing tests**:
 
 ```powershell
 # From agentforge/backend/
@@ -265,6 +265,7 @@ Test Breakdown:
 - `tests/test_integration.py` (39 tests) — Phase 7 end-to-end integration across all subsystems
 - `tests/test_monitoring.py` (19 tests) — Advanced Monitoring Center, event stream filtering, telemetry, redaction & log export
 - `tests/test_terminal.py` (15 tests) — Terminal sessions, command policy enforcement, workspace isolation, SSE streaming, history, process management, export
+- `tests/test_integrations.py` (14 tests) — Free developer services integrations (GitHub, Actions, Semgrep, Gitleaks, Trivy, OpenObserve, Bugsink, Better Stack, Cloudflare, Backblaze B2, RBAC)
 
 Linting:
 ```powershell
@@ -286,6 +287,7 @@ python -m ruff check app/ tests/
 | Phase 7 | ✅ Complete | End-to-end integration testing (39 integration tests, 170 total passed, 0 lint errors) |
 | Phase 8 | ✅ Complete | Advanced Logs & Monitoring Center (SOC dashboard, developer terminal stream, LLM & tool monitors, security audits, log export) |
 | Phase 9 | ✅ Complete | Integrated Terminal & Execution Center (real PowerShell execution, SSE streaming, multi-tab sessions, agent identity branding, command policy engine, workspace isolation, 204 total tests) |
+| Phase 10 | ✅ Complete | Free Developer Services Integration (GitHub, GitHub Actions CI, Semgrep SAST, Gitleaks, Trivy, OpenObserve, Bugsink, Better Stack, Cloudflare, Backblaze B2, RBAC, 218 total tests) |
 
 ---
 
@@ -342,6 +344,37 @@ GET    /api/v1/terminal/sessions/{id}/export
 GET    /api/v1/terminal/sessions/{id}/stream   (SSE)
 WS     /api/v1/terminal/ws/{session_id}        (WebSocket)
 ```
+
+---
+
+## Free Developer Services Integration
+
+AgentForge integrates a curated selection of free-tier cloud and developer services inspired by [free-for-dev](https://github.com/ripienaar/free-for-dev), enabling zero-cost enterprise observability, CI/CD, and security.
+
+### Integrated Services
+
+| Service | Category | Free-Tier Allowance | Integration Capabilities |
+|---|---|---|---|
+| **GitHub** | VCS | Unlimited public/private repos, 5,000 req/hr | Repository connection, agent task branch creation, commit history, PR lifecycle & merge |
+| **GitHub Actions** | CI/CD | 2,000 Linux runner minutes/month | Automated Pytest, Ruff, TypeScript builds, Docker checks & live status sync |
+| **Semgrep** | Security | 100% Free Open-Source CLI & rules | AST static analysis, OWASP Top 10, command injection detection |
+| **Gitleaks** | Security | 100% Free Open-Source CLI | High-entropy secret detection, API key patterns, private key detection |
+| **Trivy** | Security | 100% Free Open-Source CLI | Dependency CVE vulnerability scans, SBOM generation, Dockerfile checks |
+| **OpenObserve** | Observability | 0.5 GB/day cloud or unlimited self-hosted | Centralized structured event forwarding with automatic secret redaction |
+| **Bugsink** | Error Tracking | Free self-hosted or free cloud tier | Sentry-compatible exception reporting, frontend error capture |
+| **Better Stack** | Monitoring | 10 monitors, 3-min check intervals | Uptime heartbeat pings, multi-subsystem health probes, status page sync |
+| **Cloudflare** | Deployment | Unlimited Pages sites, 50 free tunnels | Pages static deployment guide, cloudflared development tunnel supervisor |
+| **Backblaze B2** | Storage | 10 GB free storage, 1 GB/day egress | S3-compatible cloud object archival for reports, test runs & backups |
+| **RBAC / Auth** | Access Control | Unlimited local users | Role-based access control (Admin, Developer, Viewer) with local developer mode |
+
+### Local-First Guarantee
+
+All integrations are strictly optional. If no external API credentials are configured, AgentForge seamlessly falls back to 100% local functionality:
+- Local Git branches and workspaces if GitHub token is omitted.
+- Native AST security analysis and regex secret detection if Semgrep/Gitleaks binaries are absent.
+- SQLite event persistence if OpenObserve is not configured.
+- Protected internal `/health` endpoints if Better Stack heartbeat is absent.
+- Administrator developer mode without login requirement if auth is disabled.
 
 ---
 

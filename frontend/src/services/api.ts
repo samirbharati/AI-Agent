@@ -480,3 +480,69 @@ export function connectTerminalStream(
     eventSource.close();
   };
 }
+
+
+// ─── Free Developer Services Integrations API ────────────────────────────────
+
+export async function getIntegrations(
+  category?: string
+): Promise<import('../types').IntegrationStatusResponse[]> {
+  const q = category ? `?category=${category}` : '';
+  const res = await fetch(`${API_BASE}/integrations/${q}`);
+  if (!res.ok) throw new Error('Failed to load integrations');
+  return res.json();
+}
+
+export async function toggleIntegration(
+  providerId: string,
+  enabled: boolean
+): Promise<{ provider_id: string; enabled: boolean }> {
+  const res = await fetch(`${API_BASE}/integrations/${providerId}/toggle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) throw new Error('Failed to toggle integration');
+  return res.json();
+}
+
+export async function testIntegration(
+  providerId: string
+): Promise<import('../types').IntegrationTestResult> {
+  const res = await fetch(`${API_BASE}/integrations/${providerId}/test`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to test integration');
+  return res.json();
+}
+
+export async function runSecurityAudit(
+  projectId: string
+): Promise<import('../types').SecurityAuditResult> {
+  const res = await fetch(`${API_BASE}/integrations/security/audit/${projectId}`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to run security audit');
+  return res.json();
+}
+
+export async function getCloudflareStatus(): Promise<any> {
+  const res = await fetch(`${API_BASE}/integrations/cloudflare/status`);
+  if (!res.ok) throw new Error('Failed to fetch Cloudflare status');
+  return res.json();
+}
+
+export async function getBackblazeArtifacts(projectId?: string): Promise<any[]> {
+  const q = projectId ? `?project_id=${projectId}` : '';
+  const res = await fetch(`${API_BASE}/integrations/backblaze/artifacts${q}`);
+  if (!res.ok) throw new Error('Failed to fetch Backblaze artifacts');
+  return res.json();
+}
+
+export async function triggerBetterStackHeartbeat(): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/integrations/betterstack/heartbeat`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to send heartbeat');
+  return res.json();
+}

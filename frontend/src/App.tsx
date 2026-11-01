@@ -34,10 +34,13 @@ import { WorkspaceExplorer } from './components/WorkspaceExplorer';
 import { QASecurityPanel } from './components/QASecurityPanel';
 import { LogsCenter } from './components/monitoring/LogsCenter';
 import { TerminalCenter } from './components/terminal/TerminalCenter';
+import { IntegrationsCenter } from './components/integrations/IntegrationsCenter';
 import { FolderGit2, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'workspace' | 'terminal' | 'monitoring'>('workspace');
+  const [viewMode, setViewMode] = useState<
+    'workspace' | 'terminal' | 'monitoring' | 'integrations'
+  >('workspace');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -233,6 +236,8 @@ export const App: React.FC = () => {
             project={selectedProject}
             onOpenTraceLogs={(_traceId?: string) => setViewMode('monitoring')}
           />
+        ) : viewMode === 'integrations' ? (
+          <IntegrationsCenter project={selectedProject} />
         ) : selectedProject ? (
           <>
             {/* Project Overview Card */}

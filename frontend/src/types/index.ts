@@ -378,3 +378,98 @@ export interface TerminalSecurityStatus {
 
 
 
+
+
+// ─── Free Developer Services Integrations ────────────────────────────────────
+
+export type IntegrationCategory =
+  | 'vcs'
+  | 'ci_cd'
+  | 'security'
+  | 'observability'
+  | 'error_tracking'
+  | 'monitoring'
+  | 'deployment'
+  | 'storage'
+  | 'auth';
+
+export type ProviderStatus =
+  | 'connected'
+  | 'disconnected'
+  | 'not_configured'
+  | 'disabled'
+  | 'error';
+
+export interface ProviderUsage {
+  quota_used: number;
+  quota_total?: number | null;
+  quota_unit: string;
+  percentage?: number | null;
+  resets_at?: string | null;
+  description?: string | null;
+}
+
+export interface IntegrationStatusResponse {
+  provider_id: string;
+  name: string;
+  category: IntegrationCategory;
+  description: string;
+  free_tier_info: string;
+  is_enabled: boolean;
+  status: ProviderStatus;
+  message: string;
+  latency_ms?: number | null;
+  last_checked: string;
+  usage?: ProviderUsage | null;
+  features: string[];
+  has_credentials: boolean;
+}
+
+export interface IntegrationTestResult {
+  success: boolean;
+  status: ProviderStatus;
+  message: string;
+  latency_ms?: number | null;
+  details?: Record<string, any>;
+}
+
+export interface GitHubRepoSummary {
+  name: string;
+  full_name: string;
+  owner: string;
+  description?: string | null;
+  private: boolean;
+  default_branch: string;
+  html_url: string;
+  stars_count: number;
+  forks_count: number;
+  open_issues_count: number;
+}
+
+export interface GitHubPullRequest {
+  number: number;
+  title: string;
+  body?: string | null;
+  state: string;
+  html_url: string;
+  head_branch: string;
+  base_branch: string;
+  author: string;
+  created_at: string;
+  updated_at?: string | null;
+  merged: boolean;
+  mergeable?: boolean | null;
+  draft: boolean;
+}
+
+export interface SecurityAuditResult {
+  project_id: string;
+  passed: boolean;
+  total_findings: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  reports: any[];
+  findings: any[];
+}

@@ -84,6 +84,51 @@ class Settings(BaseSettings):
     # ── Observability ──────────────────────────────────────────────────────
     log_retention_days: int = Field(default=30, ge=1, le=365)
 
+    # ── Free Developer Services Integrations ──────────────────────────────
+    # 1. GitHub & GitHub Actions
+    github_enabled: bool = Field(default=True)
+    github_token: str = Field(default="")
+    github_owner: str = Field(default="")
+    github_default_repo: str = Field(default="")
+
+    # 2. Security Scanners (Semgrep, Gitleaks, Trivy)
+    semgrep_enabled: bool = Field(default=True)
+    gitleaks_enabled: bool = Field(default=True)
+    trivy_enabled: bool = Field(default=True)
+
+    # 3. OpenObserve Log Ingestion
+    openobserve_enabled: bool = Field(default=False)
+    openobserve_endpoint: str = Field(default="http://localhost:5080")
+    openobserve_user: str = Field(default="")
+    openobserve_password: str = Field(default="")
+    openobserve_stream: str = Field(default="agentforge_events")
+
+    # 4. Bugsink Error Reporting
+    bugsink_enabled: bool = Field(default=False)
+    bugsink_dsn: str = Field(default="")
+
+    # 5. Better Stack Uptime & Heartbeats
+    betterstack_enabled: bool = Field(default=False)
+    betterstack_heartbeat_url: str = Field(default="")
+    betterstack_api_token: str = Field(default="")
+
+    # 6. Cloudflare Pages & Tunnel
+    cloudflare_enabled: bool = Field(default=False)
+    cloudflare_api_token: str = Field(default="")
+    cloudflare_account_id: str = Field(default="")
+    cloudflare_tunnel_token: str = Field(default="")
+
+    # 7. Backblaze B2 S3-Compatible Storage
+    b2_enabled: bool = Field(default=False)
+    b2_endpoint_url: str = Field(default="https://s3.us-west-004.backblazeb2.com")
+    b2_key_id: str = Field(default="")
+    b2_app_key: str = Field(default="")
+    b2_bucket_name: str = Field(default="")
+
+    # 8. Authentication & RBAC
+    auth_enabled: bool = Field(default=False)
+    auth_jwt_secret: str = Field(default="agentforge-insecure-local-jwt-secret-key-32chars")
+
     # ── Derived / computed ─────────────────────────────────────────────────
     @property
     def is_development(self) -> bool:
