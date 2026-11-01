@@ -195,7 +195,7 @@ agentforge/
 │   │   ├── schemas/          ← Pydantic request/response schemas
 │   │   ├── api/v1/           ← REST endpoints & /monitoring/ router
 │   │   └── services/         ← Ollama service, agent runners, workflow orchestrator
-│   └── tests/                ← pytest test suite (189 tests)
+│   └── tests/                ← pytest test suite (204 tests)
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -248,7 +248,7 @@ Use system Python directly: `python -m pip install ...`
 
 ## Testing
 
-The platform includes a comprehensive automated test suite with **189 passing tests**:
+The platform includes a comprehensive automated test suite with **204 passing tests**:
 
 ```powershell
 # From agentforge/backend/
@@ -264,6 +264,7 @@ Test Breakdown:
 - `tests/test_workflow.py` (32 tests) — workflow state machine, agent invocations, approval gates, SSE events
 - `tests/test_integration.py` (39 tests) — Phase 7 end-to-end integration across all subsystems
 - `tests/test_monitoring.py` (19 tests) — Advanced Monitoring Center, event stream filtering, telemetry, redaction & log export
+- `tests/test_terminal.py` (15 tests) — Terminal sessions, command policy enforcement, workspace isolation, SSE streaming, history, process management, export
 
 Linting:
 ```powershell
@@ -284,6 +285,63 @@ python -m ruff check app/ tests/
 | Phase 6 | ✅ Complete | Automated QA runner, deterministic security scanner, repair loop, QA/Security UI |
 | Phase 7 | ✅ Complete | End-to-end integration testing (39 integration tests, 170 total passed, 0 lint errors) |
 | Phase 8 | ✅ Complete | Advanced Logs & Monitoring Center (SOC dashboard, developer terminal stream, LLM & tool monitors, security audits, log export) |
+| Phase 9 | ✅ Complete | Integrated Terminal & Execution Center (real PowerShell execution, SSE streaming, multi-tab sessions, agent identity branding, command policy engine, workspace isolation, 204 total tests) |
+
+---
+
+## Terminal & Execution Center
+
+AgentForge ships a fully functional integrated terminal (`Terminal & Exec` button in the header).
+
+### Features
+
+- **Real command execution** — PowerShell commands execute as actual subprocesses; stdout/stderr stream via SSE in real time
+- **Multi-tab sessions** — 5 preset sessions per project (Main Terminal, Developer Agent, QA Execution, Security Scanner, Git Operations); unlimited user-created sessions up to the configurable maximum
+- **Agent identity** — commands submitted by AI agents are tagged with the agent name, project ID, task ID, and trace ID, so each execution is traceable to the originating agent
+- **Command Policy Engine** — blocked patterns (e.g. `rm -rf /`, `format C:`, fork bombs) are rejected before spawning; confirmation patterns (e.g. `git push --force`) surface a warning
+- **Workspace boundary enforcement** — processes cannot escape the project workspace directory; path traversal is detected and rejected
+- **Credential redaction** — secrets matching known patterns are redacted from all streamed output
+- **Docker detection** — reports Docker availability accurately; does not silently fall back or pretend container isolation is available when it is not
+- **Split terminal** — view two sessions side-by-side
+- **Specialized consoles** — collapsible bottom panel with Build / QA / Security / Git sub-tabs showing filtered command history
+- **Command Inspector Drawer** — right-side panel with stdout, stderr, and JSON metadata tabs, plus a "View in Logs Center" link that carries the trace ID to the Monitoring Center
+- **Command History Panel** — searchable, filterable history of all executions in the session
+- **Process Monitor** — live list of running PIDs with duration, agent label, and Stop button
+- **Export modal** — download session output as TXT, Markdown, or JSON
+
+### Backend modules
+
+| Module | Description |
+|--------|-------------|
+| `app/terminal/command_policy.py` | `CommandPolicyEngine` — blocked/confirmation pattern matching, `CommandCategory` enum |
+| `app/terminal/terminal_security.py` | `TerminalSecurity` — env sanitization, cwd boundary check, credential redaction, Docker detection |
+| `app/terminal/terminal_schemas.py` | Pydantic schemas for sessions, commands, processes, events, export |
+| `app/terminal/process_manager.py` | Async `ProcessManager` — subprocess lifecycle, stdout/stderr streaming, timeout, cancellation |
+| `app/terminal/session_manager.py` | `SessionManager` — in-memory ring buffer, SSE fan-out subscriber queues |
+| `app/terminal/terminal_service.py` | `TerminalService` — orchestrates policy → cwd validation → DB record → process launch → stream → log to Central Logs |
+| `app/api/v1/terminal.py` | FastAPI router — REST CRUD, SSE stream, WebSocket bidirectional endpoint |
+
+### API endpoints
+
+```
+GET    /api/v1/terminal/security/status
+GET    /api/v1/terminal/sessions/
+POST   /api/v1/terminal/sessions/
+GET    /api/v1/terminal/sessions/{id}
+PATCH  /api/v1/terminal/sessions/{id}
+DELETE /api/v1/terminal/sessions/{id}
+POST   /api/v1/terminal/sessions/{id}/execute
+POST   /api/v1/terminal/sessions/{id}/interrupt
+POST   /api/v1/terminal/sessions/{id}/clear
+GET    /api/v1/terminal/sessions/{id}/history
+GET    /api/v1/terminal/commands/{id}
+GET    /api/v1/terminal/processes/
+DELETE /api/v1/terminal/processes/{pid}/stop
+GET    /api/v1/terminal/consoles/{type}
+GET    /api/v1/terminal/sessions/{id}/export
+GET    /api/v1/terminal/sessions/{id}/stream   (SSE)
+WS     /api/v1/terminal/ws/{session_id}        (WebSocket)
+```
 
 ---
 

@@ -337,3 +337,146 @@ export function connectMonitoringStream(
   };
 }
 
+
+
+// ---------------------------------------------------------------------------
+// Terminal & Execution Center API
+// ---------------------------------------------------------------------------
+
+export async function getTerminalSecurityStatus(): Promise<import('../types').TerminalSecurityStatus> {
+  return request('/terminal/security/status');
+}
+
+export async function getTerminalSessions(projectId?: string): Promise<import('../types').TerminalSession[]> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/terminal/sessions${query}`);
+}
+
+export async function createTerminalSession(payload: {
+  project_id: string;
+  name?: string;
+  shell_type?: string;
+  working_directory?: string;
+}): Promise<import('../types').TerminalSession> {
+  return request('/terminal/sessions', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateTerminalSession(
+  sessionId: string,
+  payload: { name?: string; status?: string }
+): Promise<import('../types').TerminalSession> {
+  return request(`/terminal/sessions/${sessionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function closeTerminalSession(sessionId: string): Promise<void> {
+  await request(`/terminal/sessions/${sessionId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function executeTerminalCommand(
+  sessionId: string,
+  payload: {
+    command: string;
+    working_directory?: string;
+    agent_id?: string;
+    timeout_seconds?: number;
+  }
+): Promise<import('../types').TerminalCommand> {
+  return request(`/terminal/sessions/${sessionId}/execute`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function interruptTerminalSession(sessionId: string): Promise<{ interrupted: boolean }> {
+  return request(`/terminal/sessions/${sessionId}/interrupt`, {
+    method: 'POST',
+  });
+}
+
+export async function clearTerminalSession(sessionId: string): Promise<{ cleared: boolean }> {
+  return request(`/terminal/sessions/${sessionId}/clear`, {
+    method: 'POST',
+  });
+}
+
+export async function getTerminalHistory(
+  sessionId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<import('../types').TerminalCommand[]> {
+  return request(`/terminal/sessions/${sessionId}/history?limit=${limit}&offset=${offset}`);
+}
+
+export async function getTerminalCommandDetails(commandId: string): Promise<import('../types').TerminalCommand> {
+  return request(`/terminal/commands/${commandId}`);
+}
+
+export async function getTerminalProcesses(projectId?: string): Promise<import('../types').TerminalProcess[]> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/terminal/processes${query}`);
+}
+
+export async function stopTerminalProcess(processId: number): Promise<{ stopped: boolean }> {
+  return request(`/terminal/processes/${processId}/stop`, {
+    method: 'POST',
+  });
+}
+
+export async function getSpecializedConsole(
+  consoleType: string,
+  projectId?: string
+): Promise<{ console_type: string; count: number; commands: import('../types').TerminalCommand[] }> {
+  const query = projectId && projectId !== 'all' ? `?project_id=${projectId}` : '';
+  return request(`/terminal/consoles/${consoleType}${query}`);
+}
+
+export function getTerminalExportUrl(sessionId: string, format: string): string {
+  return `${API_BASE}/terminal/sessions/${sessionId}/export?format=${format}`;
+}
+
+export function connectTerminalStream(
+  sessionId: string,
+  onEvent: (item: import('../types').TerminalEventItem) => void,
+  onError?: (err: any) => void
+): () => void {
+  const url = `${API_BASE}/terminal/sessions/${sessionId}/stream`;
+  const eventSource = new EventSource(url);
+
+  eventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data && data.type !== 'ping') {
+        onEvent(data);
+      }
+    } catch (err) {
+      console.error('Failed to parse terminal stream event:', err);
+    }
+  };
+
+  ['stdout', 'stderr', 'status', 'system', 'error'].forEach((type) => {
+    eventSource.addEventListener(type, (e: any) => {
+      try {
+        const data = JSON.parse(e.data);
+        onEvent(data);
+      } catch (err) {
+        console.error(`Failed to parse event ${type}:`, err);
+      }
+    });
+  });
+
+  eventSource.onerror = (err) => {
+    onError?.(err);
+  };
+
+  return () => {
+    eventSource.close();
+  };
+}

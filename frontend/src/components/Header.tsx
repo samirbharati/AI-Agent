@@ -10,8 +10,8 @@ interface HeaderProps {
   onRefresh: () => void;
   isRefreshing: boolean;
   health: SystemHealth | null;
-  viewMode?: 'workspace' | 'monitoring';
-  onViewModeChange?: (mode: 'workspace' | 'monitoring') => void;
+  viewMode?: 'workspace' | 'terminal' | 'monitoring';
+  onViewModeChange?: (mode: 'workspace' | 'terminal' | 'monitoring') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -59,6 +59,18 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
               <span>Workspace</span>
+            </button>
+            <button
+              onClick={() => onViewModeChange('terminal')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                viewMode === 'terminal'
+                  ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Terminal & Exec</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </button>
             <button
               onClick={() => onViewModeChange('monitoring')}

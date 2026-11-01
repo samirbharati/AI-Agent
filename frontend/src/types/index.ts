@@ -303,6 +303,78 @@ export interface IncidentRecord {
   created_at: string;
 }
 
+// ---------------------------------------------------------------------------
+// Terminal & Execution Center Types
+// ---------------------------------------------------------------------------
+
+export interface TerminalSession {
+  id: string;
+  project_id: string;
+  name: string;
+  shell_type: 'powershell' | 'cmd' | 'bash' | 'docker';
+  working_directory: string;
+  created_by: string;
+  status: 'active' | 'closed' | 'error';
+  created_at: string;
+  closed_at?: string | null;
+  running_command?: string | null;
+  active_pid?: number | null;
+  exit_code?: number | null;
+}
+
+export interface TerminalCommand {
+  id: string;
+  session_id: string;
+  project_id: string;
+  agent_id?: string | null;
+  task_id?: string | null;
+  run_id?: string | null;
+  trace_id?: string | null;
+  command: string;
+  working_directory: string;
+  process_id?: number | null;
+  started_at: string;
+  completed_at?: string | null;
+  duration_ms?: number | null;
+  exit_code?: number | null;
+  status: 'running' | 'completed' | 'failed' | 'cancelled' | 'timed_out';
+  stdout_preview?: string | null;
+  stderr_preview?: string | null;
+}
+
+export interface TerminalProcess {
+  process_id: number;
+  session_id: string;
+  project_id: string;
+  command: string;
+  started_by: string;
+  agent_name?: string | null;
+  started_at: string;
+  duration_seconds: number;
+  status: 'running' | 'completed' | 'failed' | 'cancelled' | 'timed_out' | 'terminating';
+  cpu_percent?: number | null;
+  memory_mb?: number | null;
+}
+
+export interface TerminalEventItem {
+  type: 'stdout' | 'stderr' | 'status' | 'system' | 'error' | 'ping';
+  data: string;
+  sequence: number;
+  timestamp?: string | null;
+}
+
+export interface TerminalSecurityStatus {
+  docker: {
+    available: boolean;
+    reason: string;
+    isolation_mode: 'docker_container' | 'subprocess_sandbox';
+  };
+  powershell_available: boolean;
+  supported_shells: string[];
+  isolation_tier: string;
+}
+
+
 
 
 

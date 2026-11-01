@@ -33,10 +33,11 @@ import { ArtifactViewer } from './components/ArtifactViewer';
 import { WorkspaceExplorer } from './components/WorkspaceExplorer';
 import { QASecurityPanel } from './components/QASecurityPanel';
 import { LogsCenter } from './components/monitoring/LogsCenter';
+import { TerminalCenter } from './components/terminal/TerminalCenter';
 import { FolderGit2, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'workspace' | 'monitoring'>('workspace');
+  const [viewMode, setViewMode] = useState<'workspace' | 'terminal' | 'monitoring'>('workspace');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -226,6 +227,11 @@ export const App: React.FC = () => {
             projects={projects}
             selectedProject={selectedProject}
             health={health}
+          />
+        ) : viewMode === 'terminal' ? (
+          <TerminalCenter
+            project={selectedProject}
+            onOpenTraceLogs={(_traceId?: string) => setViewMode('monitoring')}
           />
         ) : selectedProject ? (
           <>

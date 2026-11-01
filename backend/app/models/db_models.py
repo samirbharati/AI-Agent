@@ -119,6 +119,12 @@ class Project(Base):
     workflow_events: Mapped[list[WorkflowEvent]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
+    terminal_sessions: Mapped[list[TerminalSession]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+    terminal_commands: Mapped[list[TerminalCommand]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (Index("ix_projects_status", "status"),)
 
@@ -597,4 +603,118 @@ class ModelUsageStat(Base):
     __table_args__ = (
         Index("ix_model_usage_stats_project_id", "project_id"),
         Index("ix_model_usage_stats_created_at", "created_at"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Terminal Sessions and Command Executions
+# ---------------------------------------------------------------------------
+
+
+class TerminalSession(Base):
+    """A persistent terminal session associated with a project workspace."""
+
+    __tablename__ = "terminal_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False, default="Main Terminal")
+    shell_type: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="powershell"
+    )  # powershell | cmd | bash | docker
+    working_directory: Mapped[str] = mapped_column(String(512), nullable=False, default="")
+    created_by: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="user"
+    )  # user | agent:<role>
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="active"
+    )  # active | closed | error
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    project: Mapped[Project] = relationship(back_populates="terminal_sessions")
+    commands: Mapped[list[TerminalCommand]] = relationship(
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="TerminalCommand.started_at",
+    )
+
+    __table_args__ = (
+        Index("ix_terminal_sessions_project_id", "project_id"),
+        Index("ix_terminal_sessions_status", "status"),
+    )
+
+
+class TerminalCommand(Base):
+    """A single command execution within a terminal session."""
+
+    __tablename__ = "terminal_commands"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("terminal_sessions.id", ondelete="CASCADE"), nullable=False
+    )
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    agent_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    task_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    trace_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    command: Mapped[str] = mapped_column(Text, nullable=False)
+    working_directory: Mapped[str] = mapped_column(String(512), nullable=False)
+    process_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(default=_utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    exit_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="running"
+    )  # running | completed | failed | cancelled | timed_out
+    stdout_preview: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stderr_preview: Mapped[str | None] = mapped_column(Text, nullable=True)
+    output_artifact_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+    session: Mapped[TerminalSession] = relationship(back_populates="commands")
+    project: Mapped[Project] = relationship(back_populates="terminal_commands")
+    events: Mapped[list[TerminalEvent]] = relationship(
+        back_populates="command_rel",
+        cascade="all, delete-orphan",
+        order_by="TerminalEvent.sequence_number",
+    )
+
+    __table_args__ = (
+        Index("ix_terminal_commands_session_id", "session_id"),
+        Index("ix_terminal_commands_project_id", "project_id"),
+        Index("ix_terminal_commands_status", "status"),
+        Index("ix_terminal_commands_started_at", "started_at"),
+    )
+
+
+class TerminalEvent(Base):
+    """Fine-grained stdout/stderr/lifecycle event emitted during command execution."""
+
+    __tablename__ = "terminal_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
+    command_id: Mapped[str] = mapped_column(
+        ForeignKey("terminal_commands.id", ondelete="CASCADE"), nullable=False
+    )
+    event_type: Mapped[str] = mapped_column(
+        String(32), nullable=False
+    )  # stdout | stderr | status | input | system
+    timestamp: Mapped[datetime] = mapped_column(default=_utcnow)
+    output_stream: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="stdout"
+    )  # stdout | stderr | system
+    message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    sequence_number: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    command_rel: Mapped[TerminalCommand] = relationship(back_populates="events")
+
+    __table_args__ = (
+        Index("ix_terminal_events_command_id", "command_id"),
+        Index("ix_terminal_events_sequence", "command_id", "sequence_number"),
     )
