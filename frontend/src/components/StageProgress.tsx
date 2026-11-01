@@ -119,3 +119,4 @@ export const StageProgress: React.FC<StageProgressProps> = ({ status }) => {
     </div>
   );
 };
+

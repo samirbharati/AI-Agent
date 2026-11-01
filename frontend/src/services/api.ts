@@ -151,3 +151,4 @@ export function connectWorkflowEvents(
     eventSource.close();
   };
 }
+

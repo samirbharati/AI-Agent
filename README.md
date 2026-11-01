@@ -78,7 +78,32 @@ The API will be available at:
 - **Health check**: http://localhost:8000/api/v1/health
 - **Ollama status**: http://localhost:8000/api/v1/health/ollama
 
+### 6. Start the frontend dashboard
+
+```powershell
+# In another terminal, from agentforge/frontend/
+npm run dev
+```
+
+The frontend dashboard will be available at:
+- **Dashboard UI**: http://localhost:3000
+
 ---
+
+## Specialized Agent Team
+
+AgentForge deploys 7 specialized agents cooperating through human-in-the-loop review gates:
+
+| # | Agent | Role | Output Artifacts |
+|---|-------|------|-------------------|
+| 1 | **Requirements Analyst** | Acceptance criteria, functional & non-functional requirements | `requirements.md`, user stories |
+| 2 | **System Architect** | Modular design, DB schemas, API specs, boundaries | `architecture.md`, `api_spec.yaml` |
+| 3 | **Task Planner** | Work breakdown into atomic tasks with dependencies | Task board, implementation order |
+| 4 | **Software Developer** | Modular code generation & unit test fixtures | Source code files, unit tests |
+| 5 | **QA Engineer** | Verification, edge-case testing, repro steps | `test_plan.md`, `test_report.md` |
+| 6 | **Security Engineer** | Secret detection, OWASP audits, input validation | `security_report.md` |
+| 7 | **Code Reviewer** | Independent quality governance, style & acceptance check | Code review summary & approvals |
+
 
 ## Running Tests
 
@@ -192,18 +217,6 @@ Change `APP_PORT` in `.env` and restart the backend.
 
 Your organisation's application control policy may block scripts in venv directories.
 Use system Python directly: `python -m pip install ...`
-
----
-
-### 6. Start the frontend
-
-```powershell
-# In another terminal, from agentforge/frontend/
-npm run dev
-```
-
-The frontend dashboard will be available at:
-- **Dashboard**: http://localhost:3000
 
 ---
 

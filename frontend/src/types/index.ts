@@ -140,3 +140,4 @@ export interface SystemHealth {
   environment: string;
   ollama?: OllamaHealth;
 }
+
