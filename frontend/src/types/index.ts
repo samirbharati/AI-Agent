@@ -141,3 +141,25 @@ export interface SystemHealth {
   ollama?: OllamaHealth;
 }
 
+export interface WorkspaceFile {
+  path: string;
+  size_bytes: number;
+  modified_at: string;
+}
+
+export interface WorkspaceFileContent {
+  project_id: string;
+  path: string;
+  content: string;
+  size_bytes: number;
+}
+
+export interface GitStatus {
+  project_id: string;
+  initialized: boolean;
+  branch: string | null;
+  modified: string[];
+  untracked: string[];
+}
+
+

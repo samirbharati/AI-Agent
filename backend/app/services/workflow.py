@@ -46,6 +46,8 @@ from app.models.db_models import (
     TaskExecutionAttempt,
     WorkflowEvent,
 )
+from app.services.runner import get_execution_runner
+from app.services.workspace import get_workspace_service
 
 logger = logging.getLogger(__name__)
 
@@ -403,10 +405,49 @@ async def _run_task_pipeline(
             await db.flush()
             continue
 
-        # Merge implemented files
+        # Persist files to workspace and git branch
+        workspace = get_workspace_service()
+        runner = get_execution_runner()
+        branch_name = f"feat/task-{task.id[:8]}"
+
+        workspace.init_git_repo(ctx.project_id)
+        workspace.create_or_checkout_branch(ctx.project_id, branch_name)
+
+        syntax_error = None
         for f in dev_result.parsed.get("files", []):
-            if f.get("action") != "delete":
-                implemented_files[f["path"]] = f.get("content", "")
+            action = f.get("action", "create")
+            file_path = f["path"]
+            content = f.get("content", "")
+
+            if action == "delete":
+                workspace.delete_file(ctx.project_id, file_path)
+                implemented_files.pop(file_path, None)
+            else:
+                workspace.write_file(ctx.project_id, file_path, content)
+                implemented_files[file_path] = content
+
+                # Validate syntax for Python files
+                if file_path.endswith(".py"):
+                    chk = runner.check_python_syntax(ctx.project_id, file_path)
+                    if not chk.success:
+                        syntax_error = f"Syntax error in '{file_path}': {chk.stderr.strip()}"
+                        break
+
+        if syntax_error:
+            prior_attempts.append({
+                "output": dev_result.output,
+                "error": syntax_error,
+            })
+            _update_attempt(attempt_record, "syntax_failed", syntax_error)
+            await _add_event(
+                db, ctx.project_id, "syntax_check_failed",
+                f"Task '{task.title}': {syntax_error}", severity="warning"
+            )
+            await db.flush()
+            continue
+
+        # Commit verified files to the task branch
+        workspace.commit_all(ctx.project_id, f"feat: implement {task.title}")
 
         # --- QA Review ---
         qa_agent = QAEngineerAgent()

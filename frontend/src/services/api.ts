@@ -2,12 +2,15 @@ import type {
   Artifact,
   ArtifactDetail,
   AgentRun,
+  GitStatus,
   Project,
   ProjectCreatePayload,
   SystemHealth,
   Task,
   WorkflowEvent,
   WorkflowStatusResponse,
+  WorkspaceFile,
+  WorkspaceFileContent,
 } from '../types';
 
 const API_BASE = '/api/v1';
@@ -112,6 +115,39 @@ export async function getArtifactContent(projectId: string, artifactName: string
 // Agent runs
 export async function getAgentRuns(projectId: string): Promise<{ runs: AgentRun[]; total: number }> {
   return request<{ runs: AgentRun[]; total: number }>(`/projects/${projectId}/agent-runs`);
+}
+
+// Workspace & Git operations
+export async function getWorkspaceFiles(
+  projectId: string,
+  subpath = ''
+): Promise<{ project_id: string; total: number; files: WorkspaceFile[] }> {
+  const query = subpath ? `?subpath=${encodeURIComponent(subpath)}` : '';
+  return request<{ project_id: string; total: number; files: WorkspaceFile[] }>(
+    `/projects/${projectId}/files${query}`
+  );
+}
+
+export async function getWorkspaceFileContent(
+  projectId: string,
+  path: string
+): Promise<WorkspaceFileContent> {
+  return request<WorkspaceFileContent>(
+    `/projects/${projectId}/files/content?path=${encodeURIComponent(path)}`
+  );
+}
+
+export async function getGitStatus(projectId: string): Promise<GitStatus> {
+  return request<GitStatus>(`/projects/${projectId}/git/status`);
+}
+
+export async function getGitDiff(
+  projectId: string,
+  baseBranch = 'main'
+): Promise<{ project_id: string; base_branch: string; diff: string }> {
+  return request<{ project_id: string; base_branch: string; diff: string }>(
+    `/projects/${projectId}/git/diff?base_branch=${encodeURIComponent(baseBranch)}`
+  );
 }
 
 // SSE Event Stream helper

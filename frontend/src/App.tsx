@@ -30,6 +30,7 @@ import { AgentRoster } from './components/AgentRoster';
 import { TaskBoard } from './components/TaskBoard';
 import { LiveLogs } from './components/LiveLogs';
 import { ArtifactViewer } from './components/ArtifactViewer';
+import { WorkspaceExplorer } from './components/WorkspaceExplorer';
 import { FolderGit2, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -273,6 +274,9 @@ export const App: React.FC = () => {
                 isConnected={isStreamConnected}
               />
             </div>
+
+            {/* Workspace Files & Git Isolation */}
+            <WorkspaceExplorer projectId={selectedProject.id} />
 
             {/* Generated Artifacts Viewer */}
             <ArtifactViewer projectId={selectedProject.id} artifacts={artifacts} />

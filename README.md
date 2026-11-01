@@ -228,7 +228,7 @@ Use system Python directly: `python -m pip install ...`
 | Phase 2 | ✅ Complete | FastAPI backend, SQLite, health checks, tests |
 | Phase 3 | ✅ Complete | Ollama client, agent definitions, workflow state machine, workflow APIs & tests |
 | Phase 4 | ✅ Complete | React + Vite + TypeScript frontend, SSE real-time dashboard |
-| Phase 5 | ⏳ Pending | Autonomous workspace execution, git branch management |
+| Phase 5 | ✅ Complete | Autonomous workspace execution, Git branch isolation, path security, local runner |
 | Phase 6 | ⏳ Pending | QA testing execution, security scanners, automated repair loops |
 | Phase 7 | ⏳ Pending | End-to-end integration tests & validation |
 
